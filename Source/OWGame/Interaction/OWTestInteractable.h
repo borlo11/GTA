@@ -5,6 +5,9 @@
 #include "Interaction/OWInteractable.h"
 #include "OWTestInteractable.generated.h"
 
+class USceneComponent;
+class UStaticMeshComponent;
+
 UCLASS()
 class OWGAME_API AOWTestInteractable : public AActor, public IOWInteractable
 {
