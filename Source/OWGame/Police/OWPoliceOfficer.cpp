@@ -36,7 +36,7 @@ AOWPoliceOfficer::AOWPoliceOfficer()
     PoliceLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PoliceLabel"));
     PoliceLabel->SetupAttachment(RootComponent);
     PoliceLabel->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f));
-    PoliceLabel->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
+    PoliceLabel->SetHorizontalAlignment(EHTA_Center);
     PoliceLabel->SetWorldSize(26.0f);
     PoliceLabel->SetTextRenderColor(FColor(50, 120, 255));
     PoliceLabel->SetText(FText::FromString(TEXT("POLICE")));
