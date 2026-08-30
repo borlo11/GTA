@@ -44,6 +44,7 @@ protected:
     void Brake();
     void ExitVehicle();
 
+    void ResolveInputAssets();
     void AddVehicleMappingContext(AController* InController);
     void RemoveVehicleMappingContext(AController* InController);
     void RestoreDriverCharacter();
