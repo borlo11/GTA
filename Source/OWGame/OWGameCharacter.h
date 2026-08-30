@@ -31,6 +31,7 @@ protected:
     void StopJump();
     void TryInteract();
     void ResolveInputAssets();
+    void BuildRuntimeMappingContext();
     void ApplyDefaultMappingContext();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
@@ -41,6 +42,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputMappingContext> RuntimeDefaultMappingContext;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputAction> MoveAction;
