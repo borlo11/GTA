@@ -12,7 +12,9 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
+#include "InputModifiers.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -83,6 +85,7 @@ void AOWGameCharacter::BeginPlay()
 
     CameraBoom->TargetArmLength = CameraDistance;
     ResolveInputAssets();
+    BuildRuntimeMappingContext();
     ApplyDefaultMappingContext();
 }
 
@@ -93,6 +96,7 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     // Resolve again at runtime so PIE remains robust even when constructor-time
     // asset lookup did not bind an editor-created input asset.
     ResolveInputAssets();
+    BuildRuntimeMappingContext();
     ApplyDefaultMappingContext();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
@@ -169,6 +173,57 @@ void AOWGameCharacter::ResolveInputAssets()
         InteractAction ? TEXT("OK") : TEXT("MISSING"));
 }
 
+void AOWGameCharacter::BuildRuntimeMappingContext()
+{
+    if (RuntimeDefaultMappingContext || !MoveAction || !LookAction || !JumpAction || !InteractAction)
+    {
+        return;
+    }
+
+    RuntimeDefaultMappingContext = NewObject<UInputMappingContext>(this, TEXT("RuntimeDefaultMappingContext"));
+    if (!RuntimeDefaultMappingContext)
+    {
+        UE_LOG(LogOWGame, Error, TEXT("Failed to create runtime input mapping context for %s."), *GetName());
+        return;
+    }
+
+    auto AddNegate = [this](FEnhancedActionKeyMapping& Mapping)
+    {
+        Mapping.Modifiers.Add(NewObject<UInputModifierNegate>(RuntimeDefaultMappingContext));
+    };
+
+    auto AddSwizzleToY = [this](FEnhancedActionKeyMapping& Mapping)
+    {
+        UInputModifierSwizzleAxis* Swizzle =
+            NewObject<UInputModifierSwizzleAxis>(RuntimeDefaultMappingContext);
+        Swizzle->Order = EInputAxisSwizzle::YXZ;
+        Mapping.Modifiers.Add(Swizzle);
+    };
+
+    FEnhancedActionKeyMapping& MoveW = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::W);
+    AddSwizzleToY(MoveW);
+
+    FEnhancedActionKeyMapping& MoveS = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::S);
+    AddNegate(MoveS);
+    AddSwizzleToY(MoveS);
+
+    FEnhancedActionKeyMapping& MoveA = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::A);
+    AddNegate(MoveA);
+
+    RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::D);
+
+    RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseX);
+
+    FEnhancedActionKeyMapping& LookY = RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseY);
+    AddSwizzleToY(LookY);
+    AddNegate(LookY);
+
+    RuntimeDefaultMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
+    RuntimeDefaultMappingContext->MapKey(InteractAction, EKeys::E);
+
+    UE_LOG(LogOWGame, Log, TEXT("Built runtime Enhanced Input mappings for %s."), *GetName());
+}
+
 void AOWGameCharacter::ApplyDefaultMappingContext()
 {
     APlayerController* PC = Cast<APlayerController>(GetController());
@@ -192,12 +247,23 @@ void AOWGameCharacter::ApplyDefaultMappingContext()
 
     if (DefaultMappingContext)
     {
-        Subsystem->AddMappingContext(DefaultMappingContext, 0);
-        UE_LOG(LogOWGame, Log, TEXT("Applied default input mapping context to %s (Controller=%s)."), *GetName(), *GetNameSafe(GetController()));
+        Subsystem->RemoveMappingContext(DefaultMappingContext);
+    }
+
+    if (RuntimeDefaultMappingContext)
+    {
+        Subsystem->RemoveMappingContext(RuntimeDefaultMappingContext);
+        Subsystem->AddMappingContext(RuntimeDefaultMappingContext, 0);
+        UE_LOG(
+            LogOWGame,
+            Log,
+            TEXT("Applied runtime input mapping context to %s (Controller=%s)."),
+            *GetName(),
+            *GetNameSafe(GetController()));
     }
     else
     {
-        UE_LOG(LogOWGame, Warning, TEXT("No DefaultMappingContext assigned to %s. See Docs/Development.md."), *GetName());
+        UE_LOG(LogOWGame, Error, TEXT("Runtime input mapping context is missing on %s."), *GetName());
     }
 }
 
