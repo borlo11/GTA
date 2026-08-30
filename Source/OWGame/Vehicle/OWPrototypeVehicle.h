@@ -49,7 +49,6 @@ protected:
     void BuildRuntimeVehicleMappingContext();
     void AddVehicleMappingContext(AController* InController);
     void RemoveVehicleMappingContext(AController* InController);
-    void RestoreDriverCharacter();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Vehicle")
     TObjectPtr<UStaticMeshComponent> VehicleMesh;
