@@ -89,7 +89,7 @@ AOWGameCharacter::AOWGameCharacter()
     UStaticMesh* SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 
     ConfigurePrototypePart(TorsoMesh, CylinderMesh, FVector(0.0f, 0.0f, 28.0f), FVector(0.36f, 0.28f, 0.62f));
-    ConfigurePrototypePart(HeadMesh, SphereMesh, FVector(0.0f, 0.0f, 82.0f), FVector(0.30f));
+    ConfigurePrototypePart(HeadMesh, SphereMesh, FVector(0.0f, 0.0f, 82.0f), FVector(0.30f, 0.30f, 0.30f));
     ConfigurePrototypePart(LeftArmMesh, CylinderMesh, FVector(0.0f, -34.0f, 24.0f), FVector(0.11f, 0.11f, 0.55f));
     ConfigurePrototypePart(RightArmMesh, CylinderMesh, FVector(0.0f, 34.0f, 24.0f), FVector(0.11f, 0.11f, 0.55f));
     ConfigurePrototypePart(LeftLegMesh, CylinderMesh, FVector(0.0f, -14.0f, -46.0f), FVector(0.14f, 0.14f, 0.62f));
@@ -366,7 +366,7 @@ void AOWGameCharacter::StopSprint()
     }
 }
 
-AActor* AOWGameCharacter::FindInteractableInView() const
+AActor* AOWGameCharacter::FindInteractableInView()
 {
     if (!FollowCamera || !GetWorld() || !Controller)
     {
@@ -403,7 +403,7 @@ AActor* AOWGameCharacter::FindInteractableInView() const
             continue;
         }
 
-        if (IOWInteractable::Execute_CanInteract(HitActor, const_cast<AOWGameCharacter*>(this)))
+        if (IOWInteractable::Execute_CanInteract(HitActor, this))
         {
             return HitActor;
         }
