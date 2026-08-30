@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Interaction/OWInteractable.h"
+#include "OWInteractable.h"
 #include "OWTestInteractable.generated.h"
 
 class USceneComponent;
