@@ -28,7 +28,7 @@ Generated original urban district using UNIBLOCKS FREE plus lightweight road/sid
 
 ## M5 — Crime / police prototype
 
-Minimal crime reporting, response, pursuit, search, and de-escalation loop.
+Minimal crime reporting, persistent 0-3 wanted state, police response, pursuit/search, possession continuity, HUD feedback, and de-escalation loop.
 
 ## M6 — Combat prototype
 
