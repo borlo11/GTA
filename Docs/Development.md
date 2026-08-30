@@ -46,6 +46,10 @@ Then run the same command with `Content\Python\validate_m2.py`. Required marker:
 
 `VALIDATE_M2: ALL CHECKS PASSED`
 
+## Milestone 3 character / interaction slice
+
+Milestone 3 is code-only and does not require new binary assets. It adds the visible prototype character body, sprint, camera polish, timer-driven interaction focus, and contextual HUD. See `Docs/Milestone3.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -72,6 +76,7 @@ With UE installed, run Unreal Automation tests matching:
 
 - `OWGame.Foundation.*`
 - `OWGame.Vehicle.*`
+- `OWGame.Character.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 

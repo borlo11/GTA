@@ -17,6 +17,7 @@ public:
     AOWTestInteractable();
 
     virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+    virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
     virtual void Interact_Implementation(AActor* Interactor) override;
 
 private:

@@ -141,6 +141,13 @@ bool AOWPrototypeVehicle::CanInteract_Implementation(AActor* Interactor) const
     return !IsOccupied() && IsValid(Character) && IsValid(Character->GetController());
 }
 
+FText AOWPrototypeVehicle::GetInteractionPrompt_Implementation(AActor* Interactor) const
+{
+    return IsOccupied()
+        ? FText::GetEmpty()
+        : NSLOCTEXT("OWGame", "EnterVehiclePrompt", "Entra nel veicolo");
+}
+
 void AOWPrototypeVehicle::Interact_Implementation(AActor* Interactor)
 {
     AOWGameCharacter* Character = Cast<AOWGameCharacter>(Interactor);

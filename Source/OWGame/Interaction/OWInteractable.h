@@ -19,5 +19,8 @@ public:
     bool CanInteract(AActor* Interactor) const;
 
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Interaction")
+    FText GetInteractionPrompt(AActor* Interactor) const;
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Interaction")
     void Interact(AActor* Interactor);
 };

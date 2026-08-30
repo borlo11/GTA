@@ -19,6 +19,11 @@ bool AOWTestInteractable::CanInteract_Implementation(AActor* Interactor) const
     return IsValid(Interactor);
 }
 
+FText AOWTestInteractable::GetInteractionPrompt_Implementation(AActor* Interactor) const
+{
+    return NSLOCTEXT("OWGame", "TestInteractablePrompt", "Interagisci");
+}
+
 void AOWTestInteractable::Interact_Implementation(AActor* Interactor)
 {
     bHasBeenInteractedWith = !bHasBeenInteractedWith;
