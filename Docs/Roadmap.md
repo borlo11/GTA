@@ -10,24 +10,28 @@ Player, camera, Enhanced Input foundation, interaction, logging, debugging/test 
 
 One vehicle, possession/enter/exit, driving input, camera integration, and measurable performance. No traffic fleet.
 
-## M3 — NPC / population prototype
+## M3 — Character & interaction vertical slice
+
+Visible third-person prototype body, sprint, camera feel, contextual interaction prompt, forgiving interaction targeting, and M1/M2 continuity.
+
+## M4 — NPC / population prototype
 
 Small pedestrian population with simulation-LOD experiments and profiling.
 
-## M4 — Crime / police prototype
+## M5 — Crime / police prototype
 
 Minimal crime reporting, response, pursuit, search, and de-escalation loop.
 
-## M5 — Combat prototype
+## M6 — Combat prototype
 
 Focused ranged/melee foundations with animation and damage architecture.
 
-## M6 — Mission framework
+## M7 — Mission framework
 
 Data-driven mission state, objectives, triggers, save integration, and debugging tools.
 
-## M7 — Small open-world vertical slice
+## M8 — Small open-world vertical slice
 
 A compact original district combining validated systems, one polished mission, streaming/world-partition experiments, and a stable performance target.
 
-Expansion beyond M7 is intentionally undefined until the vertical slice is evaluated.
+Expansion beyond M8 is intentionally undefined until the vertical slice is evaluated.
