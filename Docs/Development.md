@@ -62,6 +62,10 @@ M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationMana
 
 M4.5 generates `/Game/Maps/OW_LightweightCity` with `Content/Python/bootstrap_lightweight_city.py`. Validate it with `Content/Python/validate_lightweight_city.py`. See `Docs/Milestone4_5.md`.
 
+## Milestone 5 crime / police prototype
+
+M5 is code-only on top of the M4.5 city. Press `F` in non-shipping builds to report a severity-1 prototype crime. Wanted state persists on `AOWGamePlayerController`, `AOWPoliceDirector` owns response spawning, and officers pursue/search the currently possessed pawn. See `Docs/Milestone5.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -90,6 +94,7 @@ With UE installed, run Unreal Automation tests matching:
 - `OWGame.Vehicle.*`
 - `OWGame.Character.*`
 - `OWGame.Population.*`
+- `OWGame.CrimePolice.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 
