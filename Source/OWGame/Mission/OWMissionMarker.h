@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "OWMissionMarker.generated.h"
 
+class UPointLightComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
 
@@ -24,4 +25,7 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
     TObjectPtr<UTextRenderComponent> MarkerText;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    TObjectPtr<UPointLightComponent> MarkerLight;
 };
