@@ -6,21 +6,24 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 4. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 5. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
 - `AOWGameGameMode`: selects the native player pawn and controller.
-- `AOWGamePlayerController`: minimal controller foundation.
+- `AOWGamePlayerController`: persistent player controller foundation and owner of the M5 wanted component across on-foot/vehicle possession.
 - `AOWGameCharacter`: third-person movement, sprint, shoulder camera, Enhanced Input, timer-driven interaction focus, and optional UE Third Person template skeletal visuals with a safe primitive fallback.
 - `IOWInteractable`: reusable interaction contract.
 - `AOWTestInteractable`: Milestone 1 validation actor.
 - `AOWPrototypeVehicle`: Milestone 2 enterable prototype pawn with vehicle input, camera, possession transfer, and an M3 contextual prompt.
 - `AOWGameHUD`: Milestone 3 lightweight contextual interaction HUD.
 - `AOWPopulationManager`: Milestone 4 runtime owner for a small pedestrian population, spawn/despawn, and distance-based simulation LOD.
-- `AOWPopulationNPC`: Milestone 4 mannequin pedestrian with timer-driven local wandering and no custom Actor Tick.
+- `AOWPopulationNPC`: Milestone 4 mannequin pedestrian with timer-driven local wandering and lightweight active locomotion Tick.
+- `UOWWantedComponent`: Milestone 5 player-specific wanted state, last-known location, crime escalation, police observation, and timer-driven de-escalation.
+- `AOWPoliceDirector`: Milestone 5 world response owner that scales a small police response from wanted level.
+- `AOWPoliceOfficer`: Milestone 5 mannequin pursuit/search actor using direct CharacterMovement steering for the prototype.
 
-No GameState or PlayerState is created yet because the current milestones have no persistent match/player state that requires them.
+No custom GameState or PlayerState is created yet. M5 wanted state is intentionally player-specific and persists across pawn possession by living on AOWGamePlayerController.
 
 Milestone 4 population ownership lives in a world actor spawned by the authoritative GameMode. It is intentionally not a global singleton.
 
@@ -57,6 +60,18 @@ Milestone 4 introduces a deliberately small pedestrian prototype. The GameMode c
 `AOWPopulationNPC` uses the M3.1 mannequin assets and `ABP_Unarmed`. It uses a lightweight Actor Tick only while actively moving so CharacterMovement receives smooth per-frame movement input and ABP_Unarmed gets coherent locomotion data. Wander decisions remain timer-driven. Dormant NPCs disable the actor tick, movement component tick, and skeletal component tick.
 
 No NavMesh, AIController, Mass Entity, Smart Objects, traffic, crime, or combat behavior is introduced by M4.
+
+## Crime / police
+
+Milestone 5 introduces the first reactive-world loop without introducing combat.
+
+`UOWWantedComponent` is owned by the persistent player controller, so wanted state survives possession changes between the on-foot character and the M2 vehicle. Crime reports raise a clamped 0-3 wanted level and update the last-known player location. Police officers refresh that location only when line-of-sight observation succeeds.
+
+`AOWPoliceDirector` is a timer-driven world actor spawned by the GameMode. It maintains a small wanted-level-dependent response around the last-known location rather than spawning continuously at the player's current position. `AOWPoliceOfficer` pursues a visible currently possessed pawn and otherwise searches around the stale last-known location.
+
+De-escalation is owned by the wanted component: sustained lack of police observation lowers the level one step at a time. At zero wanted, the response is removed.
+
+The M5 police prototype deliberately avoids NavMesh, AIController behavior trees, police vehicles, combat, arrests, and witness simulation.
 
 ## Deferred large-world technology
 
