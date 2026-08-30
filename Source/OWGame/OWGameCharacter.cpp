@@ -48,9 +48,6 @@ AOWGameCharacter::AOWGameCharacter()
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
 
-    // Resolve the standard Milestone 1 input assets so the native pawn works
-    // without requiring manual Blueprint assignment. Properties remain
-    // EditDefaultsOnly so a Blueprint subclass can still override them.
     static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultContextFinder(TEXT("/Game/Input/IMC_Default"));
     static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionFinder(TEXT("/Game/Input/IA_Move"));
     static ConstructorHelpers::FObjectFinder<UInputAction> LookActionFinder(TEXT("/Game/Input/IA_Look"));
@@ -91,22 +88,157 @@ void AOWGameCharacter::BeginPlay()
     Super::BeginPlay();
 
     CameraBoom->TargetArmLength = CameraDistance;
-    ResolveInputAssets();
-    BuildRuntimeMappingContext();
-    ApplyDefaultMappingContext();
+    ActivateOnFootInput();
 }
 
 void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-    // Resolve again at runtime so PIE remains robust even when constructor-time
-    // asset lookup did not bind an editor-created input asset.
     ActivateOnFootInput();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
     {
+        UE_LOG(LogOWGame, Error, TEXT("Expected EnhancedInputComponent on %s."), *GetName());
+        return;
+    }
+
+    if (MoveAction)
+    {
+        EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AOWGameCharacter::Move);
+    }
+
+    if (LookAction)
+    {
+        EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &AOWGameCharacter::Look);
+    }
+
+    if (JumpAction)
+    {
+        EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &AOWGameCharacter::StartJump);
+        EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &AOWGameCharacter::StopJump);
+    }
+
+    if (InteractAction)
+    {
+        EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &AOWGameCharacter::TryInteract);
+    }
+}
+
+void AOWGameCharacter::ResolveInputAssets()
+{
+    if (!DefaultMappingContext)
+    {
+        DefaultMappingContext = LoadObject<UInputMappingContext>(
+            nullptr,
+            TEXT("/Game/Input/IMC_Default.IMC_Default"));
+    }
+    if (!MoveAction)
+    {
+        MoveAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Move.IA_Move"));
+    }
+    if (!LookAction)
+    {
+        LookAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Look.IA_Look"));
+    }
+    if (!JumpAction)
+    {
+        JumpAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Jump.IA_Jump"));
+    }
+    if (!InteractAction)
+    {
+        InteractAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Interact.IA_Interact"));
+    }
+}
+
+void AOWGameCharacter::BuildRuntimeMappingContext()
+{
+    if (RuntimeDefaultMappingContext || !MoveAction || !LookAction || !JumpAction || !InteractAction)
+    {
+        return;
+    }
+
+    RuntimeDefaultMappingContext = NewObject<UInputMappingContext>(this, TEXT("RuntimeDefaultMappingContext"));
+    if (!RuntimeDefaultMappingContext)
+    {
+        UE_LOG(LogOWGame, Error, TEXT("Failed to create runtime input mapping context for %s."), *GetName());
+        return;
+    }
+
+    auto AddNegate = [this](FEnhancedActionKeyMapping& Mapping)
+    {
+        Mapping.Modifiers.Add(NewObject<UInputModifierNegate>(RuntimeDefaultMappingContext));
+    };
+
+    auto AddSwizzleToY = [this](FEnhancedActionKeyMapping& Mapping)
+    {
+        UInputModifierSwizzleAxis* Swizzle =
+            NewObject<UInputModifierSwizzleAxis>(RuntimeDefaultMappingContext);
+        Swizzle->Order = EInputAxisSwizzle::YXZ;
+        Mapping.Modifiers.Add(Swizzle);
+    };
+
+    FEnhancedActionKeyMapping& MoveW = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::W);
+    AddSwizzleToY(MoveW);
+
+    FEnhancedActionKeyMapping& MoveS = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::S);
+    AddNegate(MoveS);
+    AddSwizzleToY(MoveS);
+
+    FEnhancedActionKeyMapping& MoveA = RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::A);
+    AddNegate(MoveA);
+
+    RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::D);
+
+    RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseX);
+
+    FEnhancedActionKeyMapping& LookY = RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseY);
+    AddSwizzleToY(LookY);
+    AddNegate(LookY);
+
+    RuntimeDefaultMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
+    RuntimeDefaultMappingContext->MapKey(InteractAction, EKeys::E);
+}
+
+void AOWGameCharacter::ApplyDefaultMappingContext()
+{
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC)
+    {
+        return;
+    }
+
+    ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    if (!LocalPlayer)
+    {
+        return;
+    }
+
+    UEnhancedInputLocalPlayerSubsystem* Subsystem =
+        LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+    if (!Subsystem)
+    {
+        return;
+    }
+
+    if (DefaultMappingContext)
+    {
+        Subsystem->RemoveMappingContext(DefaultMappingContext);
+    }
+
+    if (RuntimeDefaultMappingContext)
+    {
+        Subsystem->RemoveMappingContext(RuntimeDefaultMappingContext);
+        Subsystem->AddMappingContext(RuntimeDefaultMappingContext, 0);
     }
     else
     {
@@ -117,7 +249,6 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void AOWGameCharacter::Move(const FInputActionValue& Value)
 {
     const FVector2D MovementVector = Value.Get<FVector2D>();
-
     if (!Controller)
     {
         return;
@@ -136,7 +267,6 @@ void AOWGameCharacter::Move(const FInputActionValue& Value)
 void AOWGameCharacter::Look(const FInputActionValue& Value)
 {
     const FVector2D LookAxis = Value.Get<FVector2D>();
-
     AddControllerYawInput(LookAxis.X * LookSensitivity);
     AddControllerPitchInput(LookAxis.Y * LookSensitivity);
 }
