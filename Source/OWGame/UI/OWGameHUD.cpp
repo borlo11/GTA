@@ -3,6 +3,7 @@
 #include "../OWGameCharacter.h"
 #include "../OWGamePlayerController.h"
 #include "../Crime/OWWantedComponent.h"
+#include "../Combat/OWHealthComponent.h"
 
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -61,6 +62,46 @@ void AOWGameHUD::DrawHUD()
     if (!Character)
     {
         return;
+    }
+
+    // M6 lightweight combat feedback while the on-foot character is possessed.
+    const float CenterX = Canvas->ClipX * 0.5f;
+    const float CenterY = Canvas->ClipY * 0.5f;
+    const float CrosshairHalfSize = 7.0f;
+
+    DrawLine(
+        CenterX - CrosshairHalfSize,
+        CenterY,
+        CenterX + CrosshairHalfSize,
+        CenterY,
+        FLinearColor::White,
+        1.5f);
+
+    DrawLine(
+        CenterX,
+        CenterY - CrosshairHalfSize,
+        CenterX,
+        CenterY + CrosshairHalfSize,
+        FLinearColor::White,
+        1.5f);
+
+    if (const UOWHealthComponent* Health = Character->GetHealthComponent())
+    {
+        const FString HealthLabel = FString::Printf(
+            TEXT("HP  %.0f / %.0f"),
+            Health->GetHealth(),
+            Health->GetMaxHealth());
+
+        DrawText(
+            HealthLabel,
+            Health->GetHealthNormalized() > 0.30f
+                ? FLinearColor::White
+                : FLinearColor(1.0f, 0.25f, 0.20f, 1.0f),
+            34.0f,
+            Canvas->ClipY - 54.0f,
+            Font,
+            1.0f,
+            false);
     }
 
     const FText Prompt = Character->GetInteractionPrompt();
