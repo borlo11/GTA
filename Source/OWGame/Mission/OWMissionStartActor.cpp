@@ -17,7 +17,7 @@ AOWMissionStartActor::AOWMissionStartActor()
 
     InteractionCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("InteractionCollision"));
     SetRootComponent(InteractionCollision);
-    InteractionCollision->InitCapsuleSize(InteractionRadius, 90.0f);
+    InteractionCollision->InitCapsuleSize(InteractionRadius * 0.5f, 120.0f);
     InteractionCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     InteractionCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
     InteractionCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -27,7 +27,7 @@ AOWMissionStartActor::AOWMissionStartActor()
     MarkerMesh->SetupAttachment(RootComponent);
     MarkerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     MarkerMesh->SetGenerateOverlapEvents(false);
-    MarkerMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -55.0f));
+    MarkerMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
     MarkerMesh->SetRelativeScale3D(FVector(0.95f, 0.95f, 0.08f));
 
     if (UStaticMesh* Cylinder =
