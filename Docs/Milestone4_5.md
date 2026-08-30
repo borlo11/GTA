@@ -36,6 +36,10 @@ This is intentional. The free pack contains thousands of fine-grained modular pi
 
 Later passes can replace building masses with detailed UNIBLOCKS façade assemblies without changing gameplay coordinates.
 
+## Repository policy
+
+UNIBLOCKS FREE is treated as an external Fab dependency. The imported `/Game/Uniblocks` source content is intentionally not tracked in this public repository. Install the pack locally through Fab before running the city bootstrap. The generated OWGame map may be tracked; it will resolve its UNIBLOCKS references when the dependency is installed at `/Game/Uniblocks`.
+
 ## Automation
 
 Run:
