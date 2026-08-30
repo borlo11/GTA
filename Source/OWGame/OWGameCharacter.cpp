@@ -204,6 +204,13 @@ void AOWGameCharacter::ApplyDefaultMappingContext()
 void AOWGameCharacter::Move(const FInputActionValue& Value)
 {
     const FVector2D MovementVector = Value.Get<FVector2D>();
+
+    static bool bLoggedMoveInput = false;
+    if (!bLoggedMoveInput && !MovementVector.IsNearlyZero())
+    {
+        bLoggedMoveInput = true;
+        UE_LOG(LogOWGame, Log, TEXT("MOVE INPUT RECEIVED: X=%.3f Y=%.3f"), MovementVector.X, MovementVector.Y);
+    }
     if (!Controller)
     {
         return;
@@ -222,12 +229,20 @@ void AOWGameCharacter::Move(const FInputActionValue& Value)
 void AOWGameCharacter::Look(const FInputActionValue& Value)
 {
     const FVector2D LookAxis = Value.Get<FVector2D>();
+
+    static bool bLoggedLookInput = false;
+    if (!bLoggedLookInput && !LookAxis.IsNearlyZero())
+    {
+        bLoggedLookInput = true;
+        UE_LOG(LogOWGame, Log, TEXT("LOOK INPUT RECEIVED: X=%.3f Y=%.3f"), LookAxis.X, LookAxis.Y);
+    }
     AddControllerYawInput(LookAxis.X * LookSensitivity);
     AddControllerPitchInput(LookAxis.Y * LookSensitivity);
 }
 
 void AOWGameCharacter::StartJump()
 {
+    UE_LOG(LogOWGame, Log, TEXT("JUMP INPUT RECEIVED"));
     Jump();
 }
 
@@ -238,6 +253,8 @@ void AOWGameCharacter::StopJump()
 
 void AOWGameCharacter::TryInteract()
 {
+    UE_LOG(LogOWGame, Log, TEXT("INTERACT INPUT RECEIVED"));
+
     if (!FollowCamera || !GetWorld())
     {
         return;
