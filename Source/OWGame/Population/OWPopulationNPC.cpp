@@ -3,6 +3,7 @@
 #include "../OWGame.h"
 
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimationAsset.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -23,7 +24,7 @@ AOWPopulationNPC::AOWPopulationNPC()
     UCharacterMovementComponent* Movement = GetCharacterMovement();
     Movement->bOrientRotationToMovement = false;
     Movement->bRunPhysicsWithNoController = true;
-    Movement->bUseAccelerationForPaths = true;
+    Movement->bRequestedMoveUseAcceleration = true;
     Movement->MaxWalkSpeed = WalkSpeed;
     Movement->MaxAcceleration = 900.0f;
     Movement->BrakingDecelerationWalking = 650.0f;
@@ -101,9 +102,16 @@ void AOWPopulationNPC::ApplyTemplateVisuals()
     CharacterMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
     CharacterMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CharacterMesh->SetGenerateOverlapEvents(false);
-    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-    CharacterMesh->SetAnimInstanceClass(AnimClass);
+    IdleAnimation = LoadObject<UAnimationAsset>(
+        nullptr,
+        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle"));
+    WalkAnimation = LoadObject<UAnimationAsset>(
+        nullptr,
+        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.MF_Unarmed_Walk_Fwd"));
+
+    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
     CharacterMesh->SetVisibility(true, true);
+    SetWalkingVisual(false);
 }
 
 void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
@@ -193,6 +201,27 @@ void AOWPopulationNPC::StopHorizontalMovement()
         Movement->RequestDirectMove(FVector::ZeroVector, false);
         Movement->StopMovementImmediately();
     }
+
+    SetWalkingVisual(false);
+}
+
+void AOWPopulationNPC::SetWalkingVisual(bool bWalking)
+{
+    if (bWalkingVisual == bWalking)
+    {
+        return;
+    }
+
+    USkeletalMeshComponent* CharacterMesh = GetMesh();
+    UAnimationAsset* DesiredAnimation = bWalking ? WalkAnimation : IdleAnimation;
+    if (!CharacterMesh || !DesiredAnimation)
+    {
+        return;
+    }
+
+    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+    CharacterMesh->PlayAnimation(DesiredAnimation, true);
+    bWalkingVisual = bWalking;
 }
 
 void AOWPopulationNPC::UpdateWander()
@@ -244,6 +273,7 @@ void AOWPopulationNPC::UpdateWander()
     // movement acceleration, so direct Velocity writes made the capsule move
     // while the mannequin remained in its idle pose.
     Movement->RequestDirectMove(Direction * DesiredSpeed, false);
+    SetWalkingVisual(true);
 
     const FRotator TargetRotation(0.0f, Direction.Rotation().Yaw, 0.0f);
     const float RotationStep =
