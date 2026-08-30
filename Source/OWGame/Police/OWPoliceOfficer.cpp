@@ -246,7 +246,6 @@ void AOWPoliceOfficer::HandleDeath(AActor* DeadActor)
     if (USkeletalMeshComponent* CharacterMesh = GetMesh())
     {
         CharacterMesh->SetComponentTickEnabled(false);
-        CharacterMesh->bPauseAnims = true;
     }
 
     if (PoliceLabel)
