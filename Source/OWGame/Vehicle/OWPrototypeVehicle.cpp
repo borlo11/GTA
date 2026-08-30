@@ -224,6 +224,8 @@ void AOWPrototypeVehicle::Brake()
 
 void AOWPrototypeVehicle::ExitVehicle()
 {
+    UE_LOG(LogOWGame, Log, TEXT("VEHICLE EXIT INPUT RECEIVED"));
+
     APlayerController* PlayerController = Cast<APlayerController>(GetController());
     AOWGameCharacter* Character = DriverCharacter;
 
