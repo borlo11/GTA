@@ -7,9 +7,11 @@ Saved/
 *.VC.db
 *.VC.opendb
 *.sln
+*.slnx
 *.suo
 *.user
 *.opensdf
 *.sdf
 *.tmp
 *.log
+UpgradeLog.htm

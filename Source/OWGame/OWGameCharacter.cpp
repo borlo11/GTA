@@ -13,6 +13,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "UObject/ConstructorHelpers.h"
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 #include "DrawDebugHelpers.h"
@@ -43,6 +44,36 @@ AOWGameCharacter::AOWGameCharacter()
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+
+    // Resolve the standard Milestone 1 input assets so the native pawn works
+    // without requiring manual Blueprint assignment. Properties remain
+    // EditDefaultsOnly so a Blueprint subclass can still override them.
+    static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultContextFinder(TEXT("/Game/Input/IMC_Default"));
+    static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionFinder(TEXT("/Game/Input/IA_Move"));
+    static ConstructorHelpers::FObjectFinder<UInputAction> LookActionFinder(TEXT("/Game/Input/IA_Look"));
+    static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionFinder(TEXT("/Game/Input/IA_Jump"));
+    static ConstructorHelpers::FObjectFinder<UInputAction> InteractActionFinder(TEXT("/Game/Input/IA_Interact"));
+
+    if (DefaultContextFinder.Succeeded())
+    {
+        DefaultMappingContext = DefaultContextFinder.Object;
+    }
+    if (MoveActionFinder.Succeeded())
+    {
+        MoveAction = MoveActionFinder.Object;
+    }
+    if (LookActionFinder.Succeeded())
+    {
+        LookAction = LookActionFinder.Object;
+    }
+    if (JumpActionFinder.Succeeded())
+    {
+        JumpAction = JumpActionFinder.Object;
+    }
+    if (InteractActionFinder.Succeeded())
+    {
+        InteractAction = InteractActionFinder.Object;
+    }
 }
 
 void AOWGameCharacter::BeginPlay()
