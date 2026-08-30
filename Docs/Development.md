@@ -66,6 +66,10 @@ M4.5 generates `/Game/Maps/OW_LightweightCity` with `Content/Python/bootstrap_li
 
 M5 is code-only on top of the M4.5 city. Press `F` in non-shipping builds to report a severity-1 prototype crime. Wanted state persists on `AOWGamePlayerController`, `AOWPoliceDirector` owns response spawning, and officers pursue/search the currently possessed pawn. See `Docs/Milestone5.md`.
 
+## Milestone 6 combat prototype
+
+M6 is code-only and requires no new binary input assets. While Manny is possessed, Left Mouse fires the prototype hitscan attack and Q performs melee. The reusable `UOWHealthComponent` is attached to player, population NPCs, and police. Combat reports into M5 wanted state. See `Docs/Milestone6.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -95,6 +99,7 @@ With UE installed, run Unreal Automation tests matching:
 - `OWGame.Character.*`
 - `OWGame.Population.*`
 - `OWGame.CrimePolice.*`
+- `OWGame.Combat.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 
