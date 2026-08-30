@@ -76,6 +76,7 @@ protected:
     FTimerHandle SimulationTimer;
 
     float IdleUntilWorldTime = 0.0f;
+    int32 VisualVariantSeed = 0;
     bool bPopulationInitialized = false;
     bool bWaitingAtDestination = false;
 };
