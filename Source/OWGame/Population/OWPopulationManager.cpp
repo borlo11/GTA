@@ -38,6 +38,13 @@ bool AOWPopulationManager::FindGroundedSpawnLocation(
 
     FHitResult GroundHit;
     FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OWPopulationGround), false, this);
+    for (const AOWPopulationNPC* NPC : Population)
+    {
+        if (IsValid(NPC))
+        {
+            QueryParams.AddIgnoredActor(NPC);
+        }
+    }
 
     const FVector TraceStart(Candidate.X, Candidate.Y, Candidate.Z + 1200.0f);
     const FVector TraceEnd(Candidate.X, Candidate.Y, Candidate.Z - 2200.0f);
