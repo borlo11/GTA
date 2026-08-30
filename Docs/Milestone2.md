@@ -70,7 +70,7 @@ Mappings:
 - Space → brake
 - E → exit vehicle
 
-The vehicle mapping context is added only while the vehicle is possessed and removed on unpossession.
+The vehicle mapping context is added only while the vehicle is possessed and removed on unpossession. `IMC_Default` remains active, so `IMC_Vehicle` intentionally does not duplicate the Mouse X/Y mappings.
 
 ## Editor bootstrap
 
