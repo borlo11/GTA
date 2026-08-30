@@ -78,7 +78,7 @@ void AOWGameHUD::DrawHUD()
             else
             {
                 DrawRect(
-                    FLinearColor(0.0f, 0.0f, 0.0f, 0.0f, 0.30f),
+                    FLinearColor(0.0f, 0.0f, 0.0f, 0.30f),
                     22.0f,
                     22.0f,
                     390.0f,
