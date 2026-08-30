@@ -20,7 +20,7 @@ Free UE Third Person mannequin, Animation Blueprint locomotion, and regression v
 
 ## M4 — NPC / population prototype
 
-Small pedestrian population with simulation-LOD experiments and profiling.
+Small autonomous mannequin pedestrian population with runtime spawn/despawn, distance-based simulation LOD, and profiling discipline.
 
 ## M5 — Crime / police prototype
 

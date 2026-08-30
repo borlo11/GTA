@@ -54,6 +54,10 @@ Milestone 3 is code-only and does not require new binary assets. It adds the vis
 
 M3.1 uses the free Unreal Engine Third Person template mannequin content. Add the Third Person feature/content pack from the Content Browser, then run `Content/Python/validate_m3_1_character.py`. See `Docs/Milestone3_1.md`.
 
+## Milestone 4 population prototype
+
+M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationManager`, `AOWPopulationNPC`, distance-based simulation tiers, runtime spawn/despawn, timer-driven decisions, and a minimal active locomotion tick for smooth CharacterMovement input. See `Docs/Milestone4.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -81,6 +85,7 @@ With UE installed, run Unreal Automation tests matching:
 - `OWGame.Foundation.*`
 - `OWGame.Vehicle.*`
 - `OWGame.Character.*`
+- `OWGame.Population.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 

@@ -11,4 +11,7 @@ class OWGAME_API AOWGameGameMode : public AGameModeBase
 
 public:
     AOWGameGameMode();
+
+protected:
+    virtual void BeginPlay() override;
 };

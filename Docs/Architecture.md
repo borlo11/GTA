@@ -6,7 +6,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 3.1. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 4. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
@@ -17,8 +17,12 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 - `AOWTestInteractable`: Milestone 1 validation actor.
 - `AOWPrototypeVehicle`: Milestone 2 enterable prototype pawn with vehicle input, camera, possession transfer, and an M3 contextual prompt.
 - `AOWGameHUD`: Milestone 3 lightweight contextual interaction HUD.
+- `AOWPopulationManager`: Milestone 4 runtime owner for a small pedestrian population, spawn/despawn, and distance-based simulation LOD.
+- `AOWPopulationNPC`: Milestone 4 mannequin pedestrian with timer-driven local wandering and no custom Actor Tick.
 
 No GameState or PlayerState is created yet because the current milestones have no persistent match/player state that requires them.
+
+Milestone 4 population ownership lives in a world actor spawned by the authoritative GameMode. It is intentionally not a global singleton.
 
 ## Input
 
@@ -46,6 +50,14 @@ Character and vehicle components use Unreal default-subobject ownership. Input a
 
 The vehicle keeps a transient UObject-aware reference to the current driver only while occupied. It does not create a global vehicle manager or persistent singleton.
 
+## Population
+
+Milestone 4 introduces a deliberately small pedestrian prototype. The GameMode creates one `AOWPopulationManager`, which maintains a target count around the currently possessed player pawn. NPCs are spawned only after a downward ground trace succeeds, are despawned beyond a configurable distance, and are replaced near the player's current area.
+
+`AOWPopulationNPC` uses the M3.1 mannequin assets and `ABP_Unarmed`. It uses a lightweight Actor Tick only while actively moving so CharacterMovement receives smooth per-frame movement input and ABP_Unarmed gets coherent locomotion data. Wander decisions remain timer-driven. Dormant NPCs disable the actor tick, movement component tick, and skeletal component tick.
+
+No NavMesh, AIController, Mass Entity, Smart Objects, traffic, crime, or combat behavior is introduced by M4.
+
 ## Deferred large-world technology
 
 World Partition is already present in the M1 test map, with deterministic milestone actors marked always loaded for headless validation. Broader One File Per Actor, Data Layers, HLOD, async asset loading, PCG, and potentially Mass remain future concerns.
@@ -54,7 +66,7 @@ Mass, GAS, PCG-heavy generation, custom streaming layers, and bespoke ECS archit
 
 ## Performance philosophy
 
-The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the character, test interactable, and prototype vehicle. Unreal movement components and HUD drawing run through their normal engine lifecycles. M3 interaction focus uses a low-frequency timer rather than a per-frame actor search.
+The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the player character, test interactable, prototype vehicle, and population manager. M4 population NPCs use a minimal active-movement tick to feed CharacterMovement smoothly; that tick is disabled for dormant NPCs. M3 interaction focus and M4 population decisions use timers rather than per-frame global searches.
 
 Optimization should be profiling-led, while obvious scalability traps are rejected early.
 
