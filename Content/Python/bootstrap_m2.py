@@ -7,7 +7,7 @@ import unreal
 INPUT_DIR = "/Game/Input"
 MAP_PATH = "/Game/Maps/M1_TestMap"
 VEHICLE_LABEL = "OW_M2_Vehicle"
-VEHICLE_LOCATION = unreal.Vector(550.0, -50.0, 140.0)
+VEHICLE_LOCATION = unreal.Vector(550.0, -50.0, 82.0)
 VEHICLE_ROTATION = unreal.Rotator(0.0, 0.0, 0.0)
 
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -86,6 +86,8 @@ def setup_vehicle_input():
     brake = ensure_input_action("IA_VehicleBrake", unreal.InputActionValueType.BOOLEAN)
     exit_action = ensure_input_action("IA_VehicleExit", unreal.InputActionValueType.BOOLEAN)
 
+    # IA_Look stays in IMC_Default. That context remains active while driving,
+    # so duplicating Mouse X/Y in IMC_Vehicle would double the look contribution.
     look = unreal.EditorAssetLibrary.load_asset("{}/IA_Look".format(INPUT_DIR))
     if look is None:
         raise RuntimeError("Missing /Game/Input/IA_Look. Run bootstrap_m1.py first.")
@@ -97,8 +99,6 @@ def setup_vehicle_input():
     changed |= ensure_mapping(imc, throttle, "S", [unreal.InputModifierNegate])
     changed |= ensure_mapping(imc, steer, "A", [unreal.InputModifierNegate])
     changed |= ensure_mapping(imc, steer, "D", [])
-    changed |= ensure_mapping(imc, look, "MouseX", [])
-    changed |= ensure_mapping(imc, look, "MouseY", [unreal.InputModifierNegate])
     changed |= ensure_mapping(imc, brake, "SpaceBar", [])
     changed |= ensure_mapping(imc, exit_action, "E", [])
 
