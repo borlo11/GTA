@@ -54,7 +54,7 @@ The vehicle keeps a transient UObject-aware reference to the current driver only
 
 Milestone 4 introduces a deliberately small pedestrian prototype. The GameMode creates one `AOWPopulationManager`, which maintains a target count around the currently possessed player pawn. NPCs are spawned only after a downward ground trace succeeds, are despawned beyond a configurable distance, and are replaced near the player's current area.
 
-`AOWPopulationNPC` uses the M3.1 mannequin assets and `ABP_Unarmed`. It does not use a custom Actor Tick. Simple wander decisions run on timers whose cadence changes by simulation tier. Dormant NPCs disable custom movement and skeletal component ticks.
+`AOWPopulationNPC` uses the M3.1 mannequin assets and `ABP_Unarmed`. It uses a lightweight Actor Tick only while actively moving so CharacterMovement receives smooth per-frame movement input and ABP_Unarmed gets coherent locomotion data. Wander decisions remain timer-driven. Dormant NPCs disable the actor tick, movement component tick, and skeletal component tick.
 
 No NavMesh, AIController, Mass Entity, Smart Objects, traffic, crime, or combat behavior is introduced by M4.
 
@@ -66,7 +66,7 @@ Mass, GAS, PCG-heavy generation, custom streaming layers, and bespoke ECS archit
 
 ## Performance philosophy
 
-The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the player character, test interactable, prototype vehicle, population manager, and population NPCs. Unreal movement components and HUD drawing run through their normal engine lifecycles. M3 interaction focus and M4 population decisions use timers rather than per-frame global searches.
+The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the player character, test interactable, prototype vehicle, and population manager. M4 population NPCs use a minimal active-movement tick to feed CharacterMovement smoothly; that tick is disabled for dormant NPCs. M3 interaction focus and M4 population decisions use timers rather than per-frame global searches.
 
 Optimization should be profiling-led, while obvious scalability traps are rejected early.
 
