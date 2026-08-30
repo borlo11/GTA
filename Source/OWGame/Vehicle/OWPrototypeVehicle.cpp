@@ -123,7 +123,10 @@ void AOWPrototypeVehicle::UnPossessed()
 {
     AController* OldController = GetController();
     RemoveVehicleMappingContext(OldController);
-    RestoreDriverCharacter();
+
+    // Do not restore the driver here. Possess(Character) necessarily unpossesses
+    // the vehicle during a normal exit, so restoration must be owned by
+    // ExitVehicle() rather than the generic unpossession callback.
     Super::UnPossessed();
 }
 
@@ -148,6 +151,7 @@ void AOWPrototypeVehicle::Interact_Implementation(AActor* Interactor)
     }
 
     DriverCharacter = Character;
+    DriverController = PlayerController;
     Character->SetActorHiddenInGame(true);
     Character->SetActorEnableCollision(false);
 
@@ -225,19 +229,36 @@ void AOWPrototypeVehicle::Brake()
 
 void AOWPrototypeVehicle::ExitVehicle()
 {
-    UE_LOG(LogOWGame, Log, TEXT("VEHICLE EXIT INPUT RECEIVED"));
-
     APlayerController* PlayerController = Cast<APlayerController>(GetController());
+    if (!PlayerController)
+    {
+        PlayerController = DriverController;
+    }
+
     AOWGameCharacter* Character = DriverCharacter;
 
-    if (!PlayerController || !IsValid(Character))
+    UE_LOG(
+        LogOWGame,
+        Log,
+        TEXT("VEHICLE EXIT INPUT RECEIVED Controller=%s Driver=%s DriverValid=%s"),
+        *GetNameSafe(PlayerController),
+        *GetNameSafe(Character),
+        IsValid(Character) ? TEXT("true") : TEXT("false"));
+
+    if (!PlayerController)
     {
+        UE_LOG(LogOWGame, Error, TEXT("Vehicle exit aborted: no player controller."));
+        return;
+    }
+
+    if (!IsValid(Character))
+    {
+        UE_LOG(LogOWGame, Error, TEXT("Vehicle exit aborted: stored driver character is invalid."));
         return;
     }
 
     RemoveVehicleMappingContext(PlayerController);
 
-    DriverCharacter = nullptr;
     const FVector ExitLocation = GetActorTransform().TransformPosition(ExitOffset);
     Character->SetActorLocationAndRotation(
         ExitLocation,
@@ -254,7 +275,22 @@ void AOWPrototypeVehicle::ExitVehicle()
     }
 
     PlayerController->Possess(Character);
+
+    if (PlayerController->GetPawn() != Character)
+    {
+        UE_LOG(
+            LogOWGame,
+            Error,
+            TEXT("Vehicle exit failed: controller now possesses %s instead of %s."),
+            *GetNameSafe(PlayerController->GetPawn()),
+            *GetNameSafe(Character));
+        return;
+    }
+
     Character->ActivateOnFootInput();
+
+    DriverCharacter = nullptr;
+    DriverController = nullptr;
 
     UE_LOG(LogOWGame, Log, TEXT("%s exited vehicle %s."), *Character->GetName(), *GetName());
 }
