@@ -15,3 +15,6 @@ Saved/
 *.tmp
 *.log
 UpgradeLog.htm
+
+# Third-party Fab dependency; install locally from Fab instead of tracking source assets.
+Content/Uniblocks/
