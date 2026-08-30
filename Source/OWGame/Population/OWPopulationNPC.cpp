@@ -23,9 +23,11 @@ AOWPopulationNPC::AOWPopulationNPC()
     UCharacterMovementComponent* Movement = GetCharacterMovement();
     Movement->bOrientRotationToMovement = false;
     Movement->bRunPhysicsWithNoController = true;
+    Movement->bUseAccelerationForPaths = true;
     Movement->MaxWalkSpeed = WalkSpeed;
-    Movement->BrakingDecelerationWalking = 0.0f;
-    Movement->GroundFriction = 0.0f;
+    Movement->MaxAcceleration = 900.0f;
+    Movement->BrakingDecelerationWalking = 650.0f;
+    Movement->GroundFriction = 4.0f;
 }
 
 void AOWPopulationNPC::BeginPlay()
@@ -188,8 +190,8 @@ void AOWPopulationNPC::StopHorizontalMovement()
 {
     if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
-        Movement->Velocity.X = 0.0f;
-        Movement->Velocity.Y = 0.0f;
+        Movement->RequestDirectMove(FVector::ZeroVector, false);
+        Movement->StopMovementImmediately();
     }
 }
 
@@ -236,8 +238,12 @@ void AOWPopulationNPC::UpdateWander()
 
     const float DesiredSpeed = WalkSpeed * TierSpeedScale;
     Movement->MaxWalkSpeed = DesiredSpeed;
-    Movement->Velocity.X = Direction.X * DesiredSpeed;
-    Movement->Velocity.Y = Direction.Y * DesiredSpeed;
+
+    // Feed movement through CharacterMovement's requested-move path instead of
+    // writing Velocity directly. ABP_Unarmed derives locomotion state from
+    // movement acceleration, so direct Velocity writes made the capsule move
+    // while the mannequin remained in its idle pose.
+    Movement->RequestDirectMove(Direction * DesiredSpeed, false);
 
     const FRotator TargetRotation(0.0f, Direction.Rotation().Yaw, 0.0f);
     const float RotationStep =
