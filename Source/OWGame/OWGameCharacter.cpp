@@ -13,6 +13,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "UObject/UObjectGlobals.h"
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 #include "DrawDebugHelpers.h"
@@ -45,10 +46,49 @@ AOWGameCharacter::AOWGameCharacter()
     FollowCamera->bUsePawnControlRotation = false;
 }
 
+void AOWGameCharacter::ResolveInputAssets()
+{
+    if (!DefaultMappingContext)
+    {
+        DefaultMappingContext = LoadObject<UInputMappingContext>(
+            nullptr,
+            TEXT("/Game/Input/IMC_Default.IMC_Default"));
+    }
+
+    if (!MoveAction)
+    {
+        MoveAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Move.IA_Move"));
+    }
+
+    if (!LookAction)
+    {
+        LookAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Look.IA_Look"));
+    }
+
+    if (!JumpAction)
+    {
+        JumpAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Jump.IA_Jump"));
+    }
+
+    if (!InteractAction)
+    {
+        InteractAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Interact.IA_Interact"));
+    }
+}
+
 void AOWGameCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    ResolveInputAssets();
     CameraBoom->TargetArmLength = CameraDistance;
 
     if (APlayerController* PC = Cast<APlayerController>(Controller))
@@ -63,7 +103,7 @@ void AOWGameCharacter::BeginPlay()
                 }
                 else
                 {
-                    UE_LOG(LogOWGame, Warning, TEXT("No DefaultMappingContext assigned to %s. See Docs/Development.md."), *GetName());
+                    UE_LOG(LogOWGame, Warning, TEXT("No DefaultMappingContext found at /Game/Input/IMC_Default."));
                 }
             }
         }
@@ -73,6 +113,8 @@ void AOWGameCharacter::BeginPlay()
 void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    ResolveInputAssets();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
