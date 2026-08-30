@@ -104,10 +104,11 @@ void AOWPrototypeVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInput
     {
         EnhancedInput->BindAction(BrakeAction, ETriggerEvent::Started, this, &AOWPrototypeVehicle::Brake);
     }
-    if (ExitAction)
-    {
-        EnhancedInput->BindAction(ExitAction, ETriggerEvent::Started, this, &AOWPrototypeVehicle::ExitVehicle);
-    }
+    // Bind the physical E key directly for exit. The Enhanced Input action
+    // remains part of the data model/validator, but direct key binding avoids
+    // context-transition edge cases when possession switches from character
+    // to vehicle during the same gameplay session.
+    PlayerInputComponent->BindKey(EKeys::E, IE_Pressed, this, &AOWPrototypeVehicle::ExitVehicle);
 }
 
 void AOWPrototypeVehicle::PossessedBy(AController* NewController)
