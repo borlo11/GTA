@@ -39,6 +39,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Movement")
     float GetSprintSpeed() const { return SprintSpeed; }
 
+    UFUNCTION(BlueprintPure, Category="Visual")
+    bool IsUsingTemplateSkeletalCharacter() const;
+
     void ActivateOnFootInput();
 
 protected:
@@ -53,6 +56,8 @@ protected:
     void ResolveInputAssets();
     void BuildRuntimeMappingContext();
     void ApplyDefaultMappingContext();
+    bool TryApplyTemplateSkeletalCharacter();
+    void UsePrototypeVisualFallback();
 
     void UpdateInteractionFocus();
     AActor* FindInteractableInView();
