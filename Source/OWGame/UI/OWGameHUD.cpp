@@ -4,6 +4,7 @@
 #include "../OWGamePlayerController.h"
 #include "../Crime/OWWantedComponent.h"
 #include "../Combat/OWHealthComponent.h"
+#include "../Mission/OWMissionComponent.h"
 
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -28,6 +29,46 @@ void AOWGameHUD::DrawHUD()
     if (const AOWGamePlayerController* OWController =
         Cast<AOWGamePlayerController>(PlayerOwner))
     {
+        if (const UOWMissionComponent* Mission = OWController->GetMissionComponent())
+        {
+            const EOWMissionState MissionState = Mission->GetMissionState();
+            if (MissionState != EOWMissionState::Inactive)
+            {
+                const FString MissionTitle =
+                    FString::Printf(TEXT("MISSIONE: %s"), *Mission->GetMissionTitle().ToString());
+
+                DrawText(
+                    MissionTitle,
+                    FLinearColor(1.0f, 0.86f, 0.25f, 1.0f),
+                    34.0f,
+                    34.0f,
+                    Font,
+                    1.05f,
+                    false);
+
+                FString ObjectiveLabel = Mission->GetCurrentObjectiveText().ToString();
+                const float DistanceCm = Mission->GetCurrentObjectiveDistance();
+                if (MissionState == EOWMissionState::Active && DistanceCm >= 0.0f)
+                {
+                    ObjectiveLabel += FString::Printf(
+                        TEXT("  (%.0f m)"),
+                        DistanceCm / 100.0f);
+                }
+
+                if (!ObjectiveLabel.IsEmpty())
+                {
+                    DrawText(
+                        ObjectiveLabel,
+                        FLinearColor::White,
+                        34.0f,
+                        62.0f,
+                        Font,
+                        0.95f,
+                        false);
+                }
+            }
+        }
+
         if (const UOWWantedComponent* Wanted = OWController->GetWantedComponent())
         {
             const int32 WantedLevel = Wanted->GetWantedLevel();
