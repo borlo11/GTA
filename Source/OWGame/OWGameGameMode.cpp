@@ -4,6 +4,7 @@
 #include "UI/OWGameHUD.h"
 #include "Population/OWPopulationManager.h"
 #include "Police/OWPoliceDirector.h"
+#include "VerticalSlice/OWVerticalSliceDirector.h"
 
 #include "Engine/World.h"
 
@@ -33,6 +34,12 @@ void AOWGameGameMode::BeginPlay()
 
         World->SpawnActor<AOWPoliceDirector>(
             AOWPoliceDirector::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            SpawnParameters);
+
+        World->SpawnActor<AOWVerticalSliceDirector>(
+            AOWVerticalSliceDirector::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator,
             SpawnParameters);
