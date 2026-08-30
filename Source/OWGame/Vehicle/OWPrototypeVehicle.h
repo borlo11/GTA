@@ -30,6 +30,7 @@ public:
     virtual UPawnMovementComponent* GetMovementComponent() const override;
 
     virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+    virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
     virtual void Interact_Implementation(AActor* Interactor) override;
 
     UFUNCTION(BlueprintPure, Category="Vehicle")
