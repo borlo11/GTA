@@ -58,6 +58,10 @@ M3.1 uses the free Unreal Engine Third Person template mannequin content. Add th
 
 M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationManager`, `AOWPopulationNPC`, distance-based simulation tiers, runtime spawn/despawn, timer-driven decisions, and a minimal active locomotion tick for smooth CharacterMovement input. See `Docs/Milestone4.md`.
 
+## Milestone 4.5 lightweight city
+
+M4.5 generates `/Game/Maps/OW_LightweightCity` with `Content/Python/bootstrap_lightweight_city.py`. Validate it with `Content/Python/validate_lightweight_city.py`. See `Docs/Milestone4_5.md`.
+
 ## Input assets
 
 On-foot baseline:
