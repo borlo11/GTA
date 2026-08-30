@@ -13,6 +13,7 @@ class UFloatingPawnMovement;
 class UPawnMovementComponent;
 class USpringArmComponent;
 class UStaticMeshComponent;
+struct FInputActionValue;
 
 UCLASS()
 class OWGAME_API AOWPrototypeVehicle : public APawn, public IOWInteractable
@@ -31,15 +32,15 @@ public:
     virtual void Interact_Implementation(AActor* Interactor) override;
 
     UFUNCTION(BlueprintPure, Category="Vehicle")
-    bool IsOccupied() const { return IsValid(DriverCharacter); }
+    bool IsOccupied() const;
 
     UFUNCTION(BlueprintPure, Category="Vehicle")
     float GetConfiguredMaxSpeed() const;
 
 protected:
-    void Throttle(const struct FInputActionValue& Value);
-    void Steer(const struct FInputActionValue& Value);
-    void Look(const struct FInputActionValue& Value);
+    void Throttle(const FInputActionValue& Value);
+    void Steer(const FInputActionValue& Value);
+    void Look(const FInputActionValue& Value);
     void Brake();
     void ExitVehicle();
 
