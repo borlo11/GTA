@@ -12,7 +12,8 @@
 
 AOWPopulationNPC::AOWPopulationNPC()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = true;
 
     GetCapsuleComponent()->InitCapsuleSize(38.0f, 92.0f);
 
@@ -23,7 +24,6 @@ AOWPopulationNPC::AOWPopulationNPC()
     UCharacterMovementComponent* Movement = GetCharacterMovement();
     Movement->bOrientRotationToMovement = false;
     Movement->bRunPhysicsWithNoController = true;
-    Movement->bRequestedMoveUseAcceleration = true;
     Movement->MaxWalkSpeed = WalkSpeed;
     Movement->MaxAcceleration = 900.0f;
     Movement->BrakingDecelerationWalking = 650.0f;
@@ -120,6 +120,8 @@ void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
         GetWorldTimerManager().ClearTimer(SimulationTimer);
         StopHorizontalMovement();
 
+        SetActorTickEnabled(false);
+
         if (UCharacterMovementComponent* Movement = GetCharacterMovement())
         {
             Movement->SetComponentTickEnabled(false);
@@ -132,6 +134,8 @@ void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
 
         return;
     }
+
+    SetActorTickEnabled(true);
 
     if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
@@ -199,8 +203,7 @@ void AOWPopulationNPC::StopHorizontalMovement()
 void AOWPopulationNPC::UpdateWander()
 {
     UWorld* World = GetWorld();
-    UCharacterMovementComponent* Movement = GetCharacterMovement();
-    if (!World || !Movement || SimulationTier == EOWPopulationSimulationTier::Dormant)
+    if (!World || SimulationTier == EOWPopulationSimulationTier::Dormant)
     {
         return;
     }
@@ -218,6 +221,7 @@ void AOWPopulationNPC::UpdateWander()
 
         bWaitingAtDestination = false;
         PickNewDestination();
+        return;
     }
 
     FVector ToDestination = WanderDestination - GetActorLocation();
@@ -228,29 +232,54 @@ void AOWPopulationNPC::UpdateWander()
         StopHorizontalMovement();
         bWaitingAtDestination = true;
         IdleUntilWorldTime = Now + RandomStream.FRandRange(0.6f, 2.2f);
+    }
+}
+
+void AOWPopulationNPC::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    if (SimulationTier == EOWPopulationSimulationTier::Dormant || bWaitingAtDestination)
+    {
+        return;
+    }
+
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement)
+    {
+        return;
+    }
+
+    FVector ToDestination = WanderDestination - GetActorLocation();
+    ToDestination.Z = 0.0f;
+
+    if (ToDestination.SizeSquared() < FMath::Square(80.0f))
+    {
+        StopHorizontalMovement();
+        bWaitingAtDestination = true;
+        IdleUntilWorldTime =
+            GetWorld() ? GetWorld()->GetTimeSeconds() + RandomStream.FRandRange(0.6f, 2.2f) : 0.0f;
         return;
     }
 
     const FVector Direction = ToDestination.GetSafeNormal();
+
     const float TierSpeedScale =
         SimulationTier == EOWPopulationSimulationTier::Low ? 0.75f :
         SimulationTier == EOWPopulationSimulationTier::Medium ? 0.90f :
         1.0f;
 
-    const float DesiredSpeed = WalkSpeed * TierSpeedScale;
-    Movement->MaxWalkSpeed = DesiredSpeed;
+    Movement->MaxWalkSpeed = WalkSpeed * TierSpeedScale;
 
-    // Keep movement inside CharacterMovement. The UE 5.8 unarmed Animation
-    // Blueprint derives locomotion from the character's movement state, and
-    // requested-move acceleration keeps the capsule smooth without root-motion
-    // animation sequences translating the actor.
-    Movement->RequestDirectMove(Direction * DesiredSpeed, false);
+    // CharacterMovement consumes movement input every frame. This gives
+    // ABP_Unarmed real acceleration/velocity data and keeps translation smooth.
+    AddMovementInput(Direction, 1.0f, true);
 
     const FRotator TargetRotation(0.0f, Direction.Rotation().Yaw, 0.0f);
-    const float RotationStep =
-        SimulationTier == EOWPopulationSimulationTier::High ? HighSimulationInterval :
-        SimulationTier == EOWPopulationSimulationTier::Medium ? MediumSimulationInterval :
-        LowSimulationInterval;
-
-    SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, RotationStep, 5.0f));
+    SetActorRotation(
+        FMath::RInterpTo(
+            GetActorRotation(),
+            TargetRotation,
+            DeltaSeconds,
+            5.0f));
 }
