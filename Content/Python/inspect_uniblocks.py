@@ -34,8 +34,14 @@ def main():
     for asset in assets:
         asset_name = str(asset.asset_name)
         package_name = str(asset.package_name)
-        class_path = str(asset.asset_class_path)
-        class_name = class_path.split(".")[-1] if "." in class_path else class_path.split("/")[-1]
+        class_path_obj = asset.asset_class_path
+        try:
+            class_name = str(class_path_obj.asset_name)
+            class_package = str(class_path_obj.package_name)
+            class_path = "{}/{}".format(class_package, class_name)
+        except Exception:
+            class_path = str(class_path_obj)
+            class_name = class_path
 
         class_counts[class_name] = class_counts.get(class_name, 0) + 1
         records.append(
@@ -54,17 +60,25 @@ def main():
     for cls in sorted(class_counts):
         log("CLASS {}={}".format(cls, class_counts[cls]))
 
+    keywords = (
+        "prefab",
+        "building",
+        "house",
+        "block",
+        "road",
+        "street",
+        "demo",
+        "sample",
+        "example",
+        "city",
+    )
+
     priority = [
         r for r in records
         if r["class"] in INTERESTING_CLASSES
         and (
-            "prefab" in r["name"].lower()
-            or "building" in r["name"].lower()
-            or "house" in r["name"].lower()
-            or "block" in r["name"].lower()
-            or "road" in r["name"].lower()
-            or "street" in r["name"].lower()
-            or "demo" in r["name"].lower()
+            any(token in r["name"].lower() for token in keywords)
+            or any(token in r["package"].lower() for token in keywords)
             or r["class"] in {"Blueprint", "World"}
         )
     ]
