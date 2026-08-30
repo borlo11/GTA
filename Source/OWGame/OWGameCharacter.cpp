@@ -81,29 +81,16 @@ void AOWGameCharacter::BeginPlay()
     Super::BeginPlay();
 
     CameraBoom->TargetArmLength = CameraDistance;
-
-    if (APlayerController* PC = Cast<APlayerController>(Controller))
-    {
-        if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
-        {
-            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
-            {
-                if (DefaultMappingContext)
-                {
-                    Subsystem->AddMappingContext(DefaultMappingContext, 0);
-                }
-                else
-                {
-                    UE_LOG(LogOWGame, Warning, TEXT("No DefaultMappingContext assigned to %s. See Docs/Development.md."), *GetName());
-                }
-            }
-        }
-    }
+    ApplyDefaultMappingContext();
 }
 
 void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    // BeginPlay can run before the pawn has a controller. Applying the mapping
+    // context here guarantees that the local player already owns this pawn.
+    ApplyDefaultMappingContext();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
@@ -131,6 +118,38 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     if (InteractAction)
     {
         EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &AOWGameCharacter::TryInteract);
+    }
+}
+
+void AOWGameCharacter::ApplyDefaultMappingContext()
+{
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC)
+    {
+        return;
+    }
+
+    ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    if (!LocalPlayer)
+    {
+        return;
+    }
+
+    UEnhancedInputLocalPlayerSubsystem* Subsystem =
+        LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+    if (!Subsystem)
+    {
+        return;
+    }
+
+    if (DefaultMappingContext)
+    {
+        Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        UE_LOG(LogOWGame, Verbose, TEXT("Applied default input mapping context to %s."), *GetName());
+    }
+    else
+    {
+        UE_LOG(LogOWGame, Warning, TEXT("No DefaultMappingContext assigned to %s. See Docs/Development.md."), *GetName());
     }
 }
 
