@@ -24,6 +24,8 @@ public:
     UFUNCTION(BlueprintPure, Category="Interaction")
     float GetInteractionRange() const { return InteractionRange; }
 
+    void ActivateOnFootInput();
+
 protected:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
