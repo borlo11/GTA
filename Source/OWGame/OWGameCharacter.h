@@ -30,6 +30,7 @@ protected:
     void StartJump();
     void StopJump();
     void TryInteract();
+    void ResolveInputAssets();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<USpringArmComponent> CameraBoom;
@@ -58,8 +59,8 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Camera", meta=(ClampMin="0.1", ClampMax="5.0"))
     float LookSensitivity = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction", meta=(ClampMin="50.0", ClampMax="1000.0"))
-    float InteractionRange = 300.0f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction", meta=(ClampMin="100.0", ClampMax="2000.0"))
+    float InteractionRange = 800.0f;
 
     UPROPERTY(EditAnywhere, Category="Debug")
     bool bDrawInteractionTrace = false;
