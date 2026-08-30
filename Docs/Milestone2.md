@@ -23,6 +23,7 @@ Included:
 - vehicle-specific Enhanced Input mapping context,
 - third-person vehicle camera,
 - deterministic M2 bootstrap into the existing M1 test map,
+- headless M2 validation,
 - automation coverage for vehicle defaults,
 - 60 FPS discipline and no custom Actor Tick.
 
@@ -87,9 +88,23 @@ The script uses the existing `/Game/Maps/M1_TestMap` and adds one always-loaded 
 
 It does not fabricate binary assets outside the real Unreal Editor.
 
+## Headless validation
+
+After bootstrap, run:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+  "C:\Users\MyPC\Documents\OWGame\OWGame.uproject" `
+  -run=pythonscript `
+  -script="C:\Users\MyPC\Documents\OWGame\Content\Python\validate_m2.py" `
+  -stdout -unattended -nosplash
+```
+
+Required log marker: `VALIDATE_M2: ALL CHECKS PASSED`.
+
 ## Required local validation
 
-Cloud/ChatGPT source changes are not considered a completed M2 until the local UE 5.8 machine verifies them.
+ChatGPT source changes are not considered a completed M2 until the local UE 5.8 machine verifies them.
 
 Build:
 
@@ -99,9 +114,9 @@ $Project = (Resolve-Path ".\OWGame.uproject").Path
   OWGameEditor Win64 Development "-Project=$Project" -WaitMutex
 ```
 
-Required result: `Result: Succeeded`
+Required result: `Result: Succeeded`.
 
-Then run the M2 bootstrap and Unreal Automation tests matching `OWGame.Vehicle.*`.
+Then run the M2 bootstrap, `validate_m2.py`, and Unreal Automation tests matching `OWGame.Vehicle.*`.
 
 Finally perform a short PIE check:
 
