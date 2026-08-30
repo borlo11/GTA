@@ -61,8 +61,6 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction", meta=(ClampMin="50.0", ClampMax="1000.0"))
     float InteractionRange = 300.0f;
 
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     UPROPERTY(EditAnywhere, Category="Debug")
     bool bDrawInteractionTrace = false;
-#endif
 };
