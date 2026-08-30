@@ -16,7 +16,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
+#include "InputModifiers.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace
@@ -77,6 +79,7 @@ void AOWPrototypeVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInput
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     ResolveInputAssets();
+    BuildRuntimeVehicleMappingContext();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
@@ -111,6 +114,7 @@ void AOWPrototypeVehicle::PossessedBy(AController* NewController)
 {
     Super::PossessedBy(NewController);
     ResolveInputAssets();
+    BuildRuntimeVehicleMappingContext();
     AddVehicleMappingContext(NewController);
 }
 
@@ -279,28 +283,74 @@ void AOWPrototypeVehicle::ResolveInputAssets()
     }
 }
 
+void AOWPrototypeVehicle::BuildRuntimeVehicleMappingContext()
+{
+    if (RuntimeVehicleMappingContext || !ThrottleAction || !SteerAction || !BrakeAction || !ExitAction)
+    {
+        return;
+    }
+
+    RuntimeVehicleMappingContext = NewObject<UInputMappingContext>(this, TEXT("RuntimeVehicleMappingContext"));
+    if (!RuntimeVehicleMappingContext)
+    {
+        UE_LOG(LogOWGame, Error, TEXT("Failed to create runtime vehicle mapping context for %s."), *GetName());
+        return;
+    }
+
+    auto AddNegate = [this](FEnhancedActionKeyMapping& Mapping)
+    {
+        Mapping.Modifiers.Add(NewObject<UInputModifierNegate>(RuntimeVehicleMappingContext));
+    };
+
+    RuntimeVehicleMappingContext->MapKey(ThrottleAction, EKeys::W);
+
+    FEnhancedActionKeyMapping& Reverse =
+        RuntimeVehicleMappingContext->MapKey(ThrottleAction, EKeys::S);
+    AddNegate(Reverse);
+
+    FEnhancedActionKeyMapping& SteerLeft =
+        RuntimeVehicleMappingContext->MapKey(SteerAction, EKeys::A);
+    AddNegate(SteerLeft);
+
+    RuntimeVehicleMappingContext->MapKey(SteerAction, EKeys::D);
+    RuntimeVehicleMappingContext->MapKey(BrakeAction, EKeys::SpaceBar);
+    RuntimeVehicleMappingContext->MapKey(ExitAction, EKeys::E);
+
+    UE_LOG(LogOWGame, Log, TEXT("Built runtime vehicle Enhanced Input mappings for %s."), *GetName());
+}
+
 void AOWPrototypeVehicle::AddVehicleMappingContext(AController* InController)
 {
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetEnhancedInputSubsystem(InController))
     {
         if (VehicleMappingContext)
         {
-            Subsystem->AddMappingContext(VehicleMappingContext, 10);
+            Subsystem->RemoveMappingContext(VehicleMappingContext);
+        }
+
+        if (RuntimeVehicleMappingContext)
+        {
+            Subsystem->RemoveMappingContext(RuntimeVehicleMappingContext);
+            Subsystem->AddMappingContext(RuntimeVehicleMappingContext, 10);
         }
         else
         {
-            UE_LOG(LogOWGame, Warning, TEXT("No VehicleMappingContext assigned to %s."), *GetName());
+            UE_LOG(LogOWGame, Error, TEXT("Runtime vehicle mapping context missing on %s."), *GetName());
         }
     }
 }
 
 void AOWPrototypeVehicle::RemoveVehicleMappingContext(AController* InController)
 {
-    if (VehicleMappingContext)
+    if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetEnhancedInputSubsystem(InController))
     {
-        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetEnhancedInputSubsystem(InController))
+        if (VehicleMappingContext)
         {
             Subsystem->RemoveMappingContext(VehicleMappingContext);
+        }
+        if (RuntimeVehicleMappingContext)
+        {
+            Subsystem->RemoveMappingContext(RuntimeVehicleMappingContext);
         }
     }
 }
