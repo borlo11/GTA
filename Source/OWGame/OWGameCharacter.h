@@ -24,6 +24,8 @@ public:
     UFUNCTION(BlueprintPure, Category="Interaction")
     float GetInteractionRange() const { return InteractionRange; }
 
+    void ActivateOnFootInput();
+
 protected:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -31,6 +33,8 @@ protected:
     void StopJump();
     void TryInteract();
     void ResolveInputAssets();
+    void BuildRuntimeMappingContext();
+    void ApplyDefaultMappingContext();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<USpringArmComponent> CameraBoom;
@@ -40,6 +44,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputMappingContext> RuntimeDefaultMappingContext;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputAction> MoveAction;

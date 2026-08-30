@@ -16,63 +16,62 @@
 
 Cloud background agents are not expected to have Unreal Engine installed. They must not stall trying to install it.
 
-## One-command Milestone 1 editor bootstrap
+## Milestone 1 bootstrap
 
 The project enables Unreal's Python Editor Script Plugin.
 
-After the C++ module is built and the test map is open, run this from the Unreal Output Log while it is in Cmd mode:
+Run the validated M1 bootstrap through Unreal:
 
 ```text
 py "C:\Users\MyPC\Documents\OWGame\Content\Python\bootstrap_m1.py"
 ```
 
-Adjust the path only if the repository is cloned elsewhere.
+The script creates/repairs the M1 Enhanced Input assets and deterministic test actors in `/Game/Maps/M1_TestMap`.
 
-The script is idempotent and will create or repair:
+## Milestone 2 vehicle prototype
 
-- `IA_Move` as Axis2D
-- `IA_Look` as Axis2D
-- `IA_Jump` as Boolean
-- `IA_Interact` as Boolean
-- `IMC_Default`
-- WASD movement mappings
-- Mouse X/Y look mappings
-- Space jump
-- E interact
-- a small deterministic M1 test platform
-- an M1 PlayerStart
-- one visible `AOWTestInteractable` cube
+Milestone 2 source and automation are documented in `Docs/Milestone2.md`.
 
-The native `AOWGameCharacter` resolves these input assets from `/Game/Input` automatically, so a Blueprint character is not required for Milestone 1.
+After the M2 C++ source builds locally, run:
 
-## Enhanced Input asset setup
+```powershell
+& "C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+  "C:\Users\MyPC\Documents\OWGame\OWGame.uproject" `
+  -run=pythonscript `
+  -script="C:\Users\MyPC\Documents\OWGame\Content\Python\bootstrap_m2.py" `
+  -stdout -unattended -nosplash
+```
 
-Binary `.uasset` files are generated through the real Unreal Editor rather than fabricated in source control.
+Then run the same command with `Content\Python\validate_m2.py`. Required marker:
 
-Expected assets:
+`VALIDATE_M2: ALL CHECKS PASSED`
+
+## Input assets
+
+On-foot baseline:
 
 - `IA_Move`: Axis2D
 - `IA_Look`: Axis2D
 - `IA_Jump`: Boolean
 - `IA_Interact`: Boolean
-- `IMC_Default`: Input Mapping Context
+- `IMC_Default`
 
-Baseline mappings:
+Vehicle prototype:
 
-- W/S/A/D -> Move
-- Mouse X/Y -> Look
-- Space -> Jump
-- E -> Interact
+- `IA_VehicleThrottle`: Axis1D
+- `IA_VehicleSteer`: Axis1D
+- `IA_VehicleBrake`: Boolean
+- `IA_VehicleExit`: Boolean
+- `IMC_Vehicle`
 
-## Test interactable
-
-The bootstrap script places one `AOWTestInteractable` using the engine cube mesh. Interaction logs through `LogOWGame`.
+Binary `.uasset` files must be generated through the real Unreal Editor rather than fabricated by source-control tooling.
 
 ## Tests
 
-With UE installed, run the Unreal Automation tests matching:
+With UE installed, run Unreal Automation tests matching:
 
-`OWGame.Foundation.*`
+- `OWGame.Foundation.*`
+- `OWGame.Vehicle.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 

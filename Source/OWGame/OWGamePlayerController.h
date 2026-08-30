@@ -11,4 +11,11 @@ class OWGAME_API AOWGamePlayerController : public APlayerController
 
 public:
     AOWGamePlayerController();
+
+protected:
+    virtual void BeginPlay() override;
+    virtual void OnPossess(APawn* InPawn) override;
+
+private:
+    void ApplyGameplayInputMode();
 };
