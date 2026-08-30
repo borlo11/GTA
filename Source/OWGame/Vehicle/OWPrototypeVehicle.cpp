@@ -237,14 +237,6 @@ void AOWPrototypeVehicle::ExitVehicle()
 
     AOWGameCharacter* Character = DriverCharacter;
 
-    UE_LOG(
-        LogOWGame,
-        Log,
-        TEXT("VEHICLE EXIT INPUT RECEIVED Controller=%s Driver=%s DriverValid=%s"),
-        *GetNameSafe(PlayerController),
-        *GetNameSafe(Character),
-        IsValid(Character) ? TEXT("true") : TEXT("false"));
-
     if (!PlayerController)
     {
         UE_LOG(LogOWGame, Error, TEXT("Vehicle exit aborted: no player controller."));
@@ -369,7 +361,6 @@ void AOWPrototypeVehicle::BuildRuntimeVehicleMappingContext()
     RuntimeVehicleMappingContext->MapKey(BrakeAction, EKeys::SpaceBar);
     RuntimeVehicleMappingContext->MapKey(ExitAction, EKeys::E);
 
-    UE_LOG(LogOWGame, Log, TEXT("Built runtime vehicle Enhanced Input mappings for %s."), *GetName());
 }
 
 void AOWPrototypeVehicle::AddVehicleMappingContext(AController* InController)
@@ -384,7 +375,6 @@ void AOWPrototypeVehicle::AddVehicleMappingContext(AController* InController)
         if (RuntimeVehicleMappingContext)
         {
             Subsystem->AddMappingContext(RuntimeVehicleMappingContext, 10);
-            UE_LOG(LogOWGame, Log, TEXT("Applied exclusive vehicle mapping context to %s."), *GetName());
         }
         else
         {
@@ -405,32 +395,5 @@ void AOWPrototypeVehicle::RemoveVehicleMappingContext(AController* InController)
         {
             Subsystem->RemoveMappingContext(RuntimeVehicleMappingContext);
         }
-    }
-}
-
-void AOWPrototypeVehicle::RestoreDriverCharacter()
-{
-    if (!IsOccupied())
-    {
-        DriverCharacter = nullptr;
-        return;
-    }
-
-    AOWGameCharacter* Character = DriverCharacter;
-    DriverCharacter = nullptr;
-
-    const FVector ExitLocation = GetActorTransform().TransformPosition(ExitOffset);
-    Character->SetActorLocationAndRotation(
-        ExitLocation,
-        FRotator(0.0f, GetActorRotation().Yaw, 0.0f),
-        false,
-        nullptr,
-        ETeleportType::TeleportPhysics);
-    Character->SetActorHiddenInGame(false);
-    Character->SetActorEnableCollision(true);
-
-    if (UCharacterMovementComponent* CharacterMovement = Character->GetCharacterMovement())
-    {
-        CharacterMovement->SetMovementMode(MOVE_Walking);
     }
 }
