@@ -10,6 +10,7 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "GameFramework/PlayerController.h"
+#include "Misc/App.h"
 
 void AOWGameHUD::DrawHUD()
 {
@@ -34,6 +35,13 @@ void AOWGameHUD::DrawHUD()
             const EOWMissionState MissionState = Mission->GetMissionState();
             if (MissionState != EOWMissionState::Inactive)
             {
+                DrawRect(
+                    FLinearColor(0.0f, 0.0f, 0.0f, 0.42f),
+                    22.0f,
+                    22.0f,
+                    440.0f,
+                    68.0f);
+
                 const FString MissionTitle =
                     FString::Printf(TEXT("MISSIONE: %s"), *Mission->GetMissionTitle().ToString());
 
@@ -67,6 +75,98 @@ void AOWGameHUD::DrawHUD()
                         false);
                 }
             }
+            else
+            {
+                DrawRect(
+                    FLinearColor(0.0f, 0.0f, 0.0f, 0.0f, 0.30f),
+                    22.0f,
+                    22.0f,
+                    390.0f,
+                    42.0f);
+
+                DrawText(
+                    TEXT("HOT RUN disponibile - cerca il marker verde"),
+                    FLinearColor(0.72f, 1.0f, 0.72f, 1.0f),
+                    34.0f,
+                    34.0f,
+                    Font,
+                    0.90f,
+                    false);
+            }
+
+            if (Mission->ShouldShowCompletionBanner())
+            {
+                const FString CompletionLabel = TEXT("MISSIONE COMPLETATA");
+                float BannerWidth = 0.0f;
+                float BannerHeight = 0.0f;
+                GetTextSize(
+                    CompletionLabel,
+                    BannerWidth,
+                    BannerHeight,
+                    Font,
+                    1.65f);
+
+                const float BannerX =
+                    (Canvas->ClipX - BannerWidth) * 0.5f;
+                const float BannerY =
+                    Canvas->ClipY * 0.24f;
+
+                DrawRect(
+                    FLinearColor(0.0f, 0.0f, 0.0f, 0.62f),
+                    BannerX - 28.0f,
+                    BannerY - 16.0f,
+                    BannerWidth + 56.0f,
+                    BannerHeight + 32.0f);
+
+                DrawText(
+                    CompletionLabel,
+                    FLinearColor(1.0f, 0.86f, 0.25f, 1.0f),
+                    BannerX,
+                    BannerY,
+                    Font,
+                    1.65f,
+                    false);
+            }
+        }
+
+        if (OWController->IsPerformanceOverlayVisible())
+        {
+            const double DeltaSeconds =
+                FMath::Max(FApp::GetDeltaTime(), 0.000001);
+            const double FrameMs = DeltaSeconds * 1000.0;
+            const double FPS = 1.0 / DeltaSeconds;
+
+            const FString PerfLabel = FString::Printf(
+                TEXT("PERF  %.0f FPS  |  %.2f ms  |  target 60 / 16.67"),
+                FPS,
+                FrameMs);
+
+            float PerfWidth = 0.0f;
+            float PerfHeight = 0.0f;
+            GetTextSize(PerfLabel, PerfWidth, PerfHeight, Font, 0.85f);
+
+            const float PerfX =
+                Canvas->ClipX - PerfWidth - 28.0f;
+            const float PerfY =
+                Canvas->ClipY - 44.0f;
+
+            DrawRect(
+                FLinearColor(0.0f, 0.0f, 0.0f, 0.55f),
+                PerfX - 12.0f,
+                PerfY - 8.0f,
+                PerfWidth + 24.0f,
+                PerfHeight + 16.0f);
+
+            DrawText(
+                PerfLabel,
+                FrameMs <= 16.67
+                    ? FLinearColor(0.55f, 1.0f, 0.55f, 1.0f)
+                    : FLinearColor(1.0f, 0.72f, 0.25f, 1.0f),
+                PerfX,
+                PerfY,
+                Font,
+                0.85f,
+                false);
         }
 
         if (const UOWWantedComponent* Wanted = OWController->GetWantedComponent())
@@ -86,6 +186,13 @@ void AOWGameHUD::DrawHUD()
                 float WantedWidth = 0.0f;
                 float WantedHeight = 0.0f;
                 GetTextSize(WantedLabel, WantedWidth, WantedHeight, Font, 1.15f);
+
+                DrawRect(
+                    FLinearColor(0.0f, 0.0f, 0.0f, 0.42f),
+                    Canvas->ClipX - WantedWidth - 54.0f,
+                    22.0f,
+                    WantedWidth + 28.0f,
+                    WantedHeight + 24.0f);
 
                 DrawText(
                     WantedLabel,
