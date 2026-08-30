@@ -56,7 +56,7 @@ M3.1 uses the free Unreal Engine Third Person template mannequin content. Add th
 
 ## Milestone 4 population prototype
 
-M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationManager`, `AOWPopulationNPC`, distance-based simulation tiers, and runtime spawn/despawn. See `Docs/Milestone4.md`.
+M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationManager`, `AOWPopulationNPC`, distance-based simulation tiers, runtime spawn/despawn, timer-driven decisions, and a minimal active locomotion tick for smooth CharacterMovement input. See `Docs/Milestone4.md`.
 
 ## Input assets
 
