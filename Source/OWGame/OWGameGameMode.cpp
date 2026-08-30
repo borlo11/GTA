@@ -3,6 +3,7 @@
 #include "OWGamePlayerController.h"
 #include "UI/OWGameHUD.h"
 #include "Population/OWPopulationManager.h"
+#include "Police/OWPoliceDirector.h"
 
 #include "Engine/World.h"
 
@@ -26,6 +27,12 @@ void AOWGameGameMode::BeginPlay()
 
         World->SpawnActor<AOWPopulationManager>(
             AOWPopulationManager::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            SpawnParameters);
+
+        World->SpawnActor<AOWPoliceDirector>(
+            AOWPoliceDirector::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator,
             SpawnParameters);
