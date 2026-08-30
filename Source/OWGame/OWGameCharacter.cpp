@@ -179,13 +179,13 @@ bool AOWGameCharacter::TryApplyTemplateSkeletalCharacter()
     {
         {
             TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
-            TEXT("/Game/Characters/Mannequins/Anims/ABP_Manny.ABP_Manny_C"),
-            TEXT("Manny Simple")
+            TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+            TEXT("Manny Simple / Unarmed")
         },
         {
             TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-            TEXT("/Game/Characters/Mannequins/Anims/ABP_Quinn.ABP_Quinn_C"),
-            TEXT("Quinn Simple")
+            TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+            TEXT("Quinn Simple / Unarmed")
         },
         {
             TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
