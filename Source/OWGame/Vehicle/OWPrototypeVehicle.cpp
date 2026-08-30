@@ -116,8 +116,8 @@ void AOWPrototypeVehicle::PossessedBy(AController* NewController)
 
 void AOWPrototypeVehicle::UnPossessed()
 {
-    AController* PreviousController = GetController();
-    RemoveVehicleMappingContext(PreviousController);
+    AController* OldController = GetController();
+    RemoveVehicleMappingContext(OldController);
     RestoreDriverCharacter();
     Super::UnPossessed();
 }
