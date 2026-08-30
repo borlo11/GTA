@@ -6,6 +6,7 @@
 #include "OWPrototypeVehicle.generated.h"
 
 class AOWGameCharacter;
+class APlayerController;
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
@@ -91,4 +92,7 @@ protected:
 
     UPROPERTY(Transient)
     TObjectPtr<AOWGameCharacter> DriverCharacter;
+
+    UPROPERTY(Transient)
+    TObjectPtr<APlayerController> DriverController;
 };
