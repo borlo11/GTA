@@ -74,6 +74,10 @@ M6 is code-only and requires no new binary input assets. While Manny is possesse
 
 M7 is code-only and requires no new binary assets. The persistent mission component lives on `AOWGamePlayerController`. In development builds, `R` starts/restarts Hot Run and `T` clears the mission save slot. Progress is stored through `UOWMissionSaveGame`. See `Docs/Milestone7.md`.
 
+## Milestone 8 small open-world vertical slice
+
+M8 integrates the previous systems into the first player-facing slice in `OW_LightweightCity`. A green in-world HOT RUN marker starts the mission with normal E interaction; F9 toggles a lightweight FPS/frame-time overlay. Run `Content/Python/validate_m8_vertical_slice.py` for the non-destructive city/World Partition inspection. See `Docs/Milestone8.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -105,6 +109,7 @@ With UE installed, run Unreal Automation tests matching:
 - `OWGame.CrimePolice.*`
 - `OWGame.Combat.*`
 - `OWGame.Mission.*`
+- `OWGame.VerticalSlice.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 
