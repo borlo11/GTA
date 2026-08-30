@@ -81,7 +81,9 @@ AOWGameCharacter::AOWGameCharacter()
 
 void AOWGameCharacter::ActivateOnFootInput()
 {
-    ActivateOnFootInput();
+    ResolveInputAssets();
+    BuildRuntimeMappingContext();
+    ApplyDefaultMappingContext();
 }
 
 void AOWGameCharacter::BeginPlay()
