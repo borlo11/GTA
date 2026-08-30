@@ -1,6 +1,8 @@
 #include "OWGameHUD.h"
 
 #include "../OWGameCharacter.h"
+#include "../OWGamePlayerController.h"
+#include "../Crime/OWWantedComponent.h"
 
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -16,6 +18,45 @@ void AOWGameHUD::DrawHUD()
         return;
     }
 
+    UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+    if (!Font)
+    {
+        return;
+    }
+
+    if (const AOWGamePlayerController* OWController =
+        Cast<AOWGamePlayerController>(PlayerOwner))
+    {
+        if (const UOWWantedComponent* Wanted = OWController->GetWantedComponent())
+        {
+            const int32 WantedLevel = Wanted->GetWantedLevel();
+            if (WantedLevel > 0)
+            {
+                FString Stars;
+                for (int32 Index = 0; Index < WantedLevel; ++Index)
+                {
+                    Stars += TEXT("* ");
+                }
+
+                const FString WantedLabel =
+                    FString::Printf(TEXT("RICERCATO  %s"), *Stars);
+
+                float WantedWidth = 0.0f;
+                float WantedHeight = 0.0f;
+                GetTextSize(WantedLabel, WantedWidth, WantedHeight, Font, 1.15f);
+
+                DrawText(
+                    WantedLabel,
+                    FLinearColor(1.0f, 0.72f, 0.15f, 1.0f),
+                    Canvas->ClipX - WantedWidth - 40.0f,
+                    34.0f,
+                    Font,
+                    1.15f,
+                    false);
+            }
+        }
+    }
+
     const AOWGameCharacter* Character = Cast<AOWGameCharacter>(PlayerOwner->GetPawn());
     if (!Character)
     {
@@ -24,12 +65,6 @@ void AOWGameHUD::DrawHUD()
 
     const FText Prompt = Character->GetInteractionPrompt();
     if (Prompt.IsEmpty())
-    {
-        return;
-    }
-
-    UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
-    if (!Font)
     {
         return;
     }
