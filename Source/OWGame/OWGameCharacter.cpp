@@ -14,6 +14,7 @@
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/UObjectGlobals.h"
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 #include "DrawDebugHelpers.h"
@@ -81,6 +82,7 @@ void AOWGameCharacter::BeginPlay()
     Super::BeginPlay();
 
     CameraBoom->TargetArmLength = CameraDistance;
+    ResolveInputAssets();
     ApplyDefaultMappingContext();
 }
 
@@ -88,8 +90,9 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-    // BeginPlay can run before the pawn has a controller. Applying the mapping
-    // context here guarantees that the local player already owns this pawn.
+    // Resolve again at runtime so PIE remains robust even when constructor-time
+    // asset lookup did not bind an editor-created input asset.
+    ResolveInputAssets();
     ApplyDefaultMappingContext();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
@@ -121,6 +124,51 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     }
 }
 
+void AOWGameCharacter::ResolveInputAssets()
+{
+    if (!DefaultMappingContext)
+    {
+        DefaultMappingContext = LoadObject<UInputMappingContext>(
+            nullptr,
+            TEXT("/Game/Input/IMC_Default.IMC_Default"));
+    }
+    if (!MoveAction)
+    {
+        MoveAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Move.IA_Move"));
+    }
+    if (!LookAction)
+    {
+        LookAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Look.IA_Look"));
+    }
+    if (!JumpAction)
+    {
+        JumpAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Jump.IA_Jump"));
+    }
+    if (!InteractAction)
+    {
+        InteractAction = LoadObject<UInputAction>(
+            nullptr,
+            TEXT("/Game/Input/IA_Interact.IA_Interact"));
+    }
+
+    UE_LOG(
+        LogOWGame,
+        Log,
+        TEXT("Input assets on %s: Context=%s Move=%s Look=%s Jump=%s Interact=%s"),
+        *GetName(),
+        DefaultMappingContext ? TEXT("OK") : TEXT("MISSING"),
+        MoveAction ? TEXT("OK") : TEXT("MISSING"),
+        LookAction ? TEXT("OK") : TEXT("MISSING"),
+        JumpAction ? TEXT("OK") : TEXT("MISSING"),
+        InteractAction ? TEXT("OK") : TEXT("MISSING"));
+}
+
 void AOWGameCharacter::ApplyDefaultMappingContext()
 {
     APlayerController* PC = Cast<APlayerController>(GetController());
@@ -145,7 +193,7 @@ void AOWGameCharacter::ApplyDefaultMappingContext()
     if (DefaultMappingContext)
     {
         Subsystem->AddMappingContext(DefaultMappingContext, 0);
-        UE_LOG(LogOWGame, Verbose, TEXT("Applied default input mapping context to %s."), *GetName());
+        UE_LOG(LogOWGame, Log, TEXT("Applied default input mapping context to %s (Controller=%s)."), *GetName(), *GetNameSafe(GetController()));
     }
     else
     {
