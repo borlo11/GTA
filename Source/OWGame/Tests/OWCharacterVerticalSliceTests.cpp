@@ -26,7 +26,7 @@ bool FOWCharacterVerticalSliceDefaultsTest::RunTest(const FString& Parameters)
     TestNotNull(TEXT("GameMode CDO exists"), GameModeCDO);
     if (GameModeCDO)
     {
-        TestEqual(TEXT("M3 HUD class is configured"), GameModeCDO->HUDClass, AOWGameHUD::StaticClass());
+        TestEqual(TEXT("M3 HUD class is configured"), GameModeCDO->HUDClass.Get(), AOWGameHUD::StaticClass());
     }
 
     return true;
