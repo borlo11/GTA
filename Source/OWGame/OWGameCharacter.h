@@ -55,7 +55,7 @@ protected:
     void ApplyDefaultMappingContext();
 
     void UpdateInteractionFocus();
-    AActor* FindInteractableInView() const;
+    AActor* FindInteractableInView();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Visual")
     TObjectPtr<USceneComponent> VisualRoot;
