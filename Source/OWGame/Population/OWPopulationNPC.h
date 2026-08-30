@@ -51,7 +51,6 @@ protected:
     void UpdateWander();
     void PickNewDestination();
     void StopHorizontalMovement();
-    void SetWalkingVisual(bool bWalking);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Population", meta=(ClampMin="50.0", ClampMax="1000.0"))
     float WanderRadius = 450.0f;
@@ -76,15 +75,8 @@ protected:
     FRandomStream RandomStream;
     FTimerHandle SimulationTimer;
 
-    UPROPERTY(Transient)
-    TObjectPtr<UAnimationAsset> IdleAnimation;
-
-    UPROPERTY(Transient)
-    TObjectPtr<UAnimationAsset> WalkAnimation;
-
     float IdleUntilWorldTime = 0.0f;
     int32 VisualVariantSeed = 0;
     bool bPopulationInitialized = false;
     bool bWaitingAtDestination = false;
-    bool bWalkingVisual = false;
 };
