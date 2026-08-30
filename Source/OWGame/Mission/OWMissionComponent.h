@@ -55,6 +55,12 @@ public:
     UFUNCTION(BlueprintPure, Category="Mission")
     FName GetMissionId() const { return MissionId; }
 
+    UFUNCTION(BlueprintPure, Category="Mission")
+    float GetCompletionBannerSeconds() const { return CompletionBannerSeconds; }
+
+    UFUNCTION(BlueprintPure, Category="Mission")
+    bool ShouldShowCompletionBanner() const;
+
 protected:
     void BuildPrototypeMission();
     void EvaluateCurrentObjective();
@@ -92,7 +98,11 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category="Mission")
     FString SaveSlotName = TEXT("OWGame_MissionState_0");
 
+    UPROPERTY(EditDefaultsOnly, Category="Mission|Presentation", meta=(ClampMin="1.0", ClampMax="10.0"))
+    float CompletionBannerSeconds = 4.5f;
+
     FText FailureReason;
     float CachedObjectiveDistance = -1.0f;
+    double CompletionBannerEndWorldTime = -1.0;
     FTimerHandle ObjectiveTimer;
 };
