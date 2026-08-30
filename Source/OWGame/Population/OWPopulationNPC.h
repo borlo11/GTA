@@ -23,6 +23,7 @@ public:
     AOWPopulationNPC();
 
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
     void InitializePopulationMember(int32 Seed, const FVector& InHomeLocation);
     void SetSimulationTier(EOWPopulationSimulationTier NewTier);
