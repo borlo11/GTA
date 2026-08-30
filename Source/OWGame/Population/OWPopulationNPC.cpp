@@ -320,7 +320,6 @@ void AOWPopulationNPC::HandleDeath(AActor* DeadActor)
     if (USkeletalMeshComponent* CharacterMesh = GetMesh())
     {
         CharacterMesh->SetComponentTickEnabled(false);
-        CharacterMesh->bPauseAnims = true;
     }
 
     SetLifeSpan(3.0f);
