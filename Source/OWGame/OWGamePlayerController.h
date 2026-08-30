@@ -4,6 +4,7 @@
 #include "GameFramework/PlayerController.h"
 #include "OWGamePlayerController.generated.h"
 
+class UOWMissionComponent;
 class UOWWantedComponent;
 
 UCLASS()
@@ -20,6 +21,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Crime")
     void ReportPrototypeCrime(int32 Severity = 1);
 
+    UFUNCTION(BlueprintPure, Category="Mission")
+    UOWMissionComponent* GetMissionComponent() const { return MissionComponent; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void OnPossess(APawn* InPawn) override;
@@ -28,7 +32,12 @@ protected:
 private:
     void ApplyGameplayInputMode();
     void DebugReportCrime();
+    void DebugStartMission();
+    void DebugResetMission();
 
     UPROPERTY(VisibleAnywhere, Category="Crime")
     TObjectPtr<UOWWantedComponent> WantedComponent;
+
+    UPROPERTY(VisibleAnywhere, Category="Mission")
+    TObjectPtr<UOWMissionComponent> MissionComponent;
 };
