@@ -6,7 +6,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 7. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 8. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
@@ -26,6 +26,8 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 - `UOWMissionComponent`: Milestone 7 persistent mission state/objective owner on the player controller.
 - `AOWMissionMarker`: Milestone 7 lightweight runtime objective marker with no Actor Tick.
 - `UOWMissionSaveGame`: Milestone 7 SaveGame payload for mission id/state/objective persistence.
+- `AOWVerticalSliceDirector`: Milestone 8 map-gated runtime presentation owner for the lightweight-city vertical slice.
+- `AOWMissionStartActor`: Milestone 8 in-world interactive entry point for Hot Run.
 
 No custom GameState or PlayerState is created yet. M5 wanted state and M7 mission state are intentionally player-specific and persist across pawn possession by living on AOWGamePlayerController.
 
@@ -101,6 +103,18 @@ Milestone 7 adds mission orchestration without coupling vehicle, police, or comb
 
 The first authored prototype, Hot Run, composes existing M2 vehicle and M5 wanted/police systems instead of embedding mission-specific branches inside them.
 
+## Vertical slice integration
+
+Milestone 8 composes M1-M7 into a player-facing loop rather than introducing another deep gameplay subsystem.
+
+`AOWGameGameMode` creates one `AOWVerticalSliceDirector`. The director immediately destroys itself outside `OW_LightweightCity`; inside the slice it waits for a valid player pawn and creates one interactive `AOWMissionStartActor` near the spawn area.
+
+The mission start actor implements the existing interaction interface and launches the existing M7 mission component. It hides while Hot Run is active and returns when the mission is no longer active, allowing replay without a debug key.
+
+The M7 mission marker gains lightweight presentation polish, while the HUD adds an immediate mission-complete banner and an optional F9 performance overlay. These changes do not move mission state out of `UOWMissionComponent` or create parallel wanted/health systems.
+
+M8 also adds a non-destructive map/World Partition inspection script. The compact city is not automatically converted to World Partition because the current district does not yet demonstrate a streaming requirement.
+
 ## Deferred large-world technology
 
 World Partition is already present in the M1 test map, with deterministic milestone actors marked always loaded for headless validation. Broader One File Per Actor, Data Layers, HLOD, async asset loading, PCG, and potentially Mass remain future concerns.
@@ -109,7 +123,7 @@ Mass, GAS, PCG-heavy generation, custom streaming layers, and bespoke ECS archit
 
 ## Performance philosophy
 
-The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the player character, test interactable, prototype vehicle, and population manager. M4 population NPCs use a minimal active-movement tick to feed CharacterMovement smoothly; that tick is disabled for dormant NPCs. M3 interaction focus and M4 population decisions use timers rather than per-frame global searches.
+The project targets 60 FPS (16.67 ms). M8 exposes the current approximate FPS/frame time through an opt-in F9 HUD overlay for local vertical-slice measurement. Custom Actor Tick is disabled on the player character, test interactable, prototype vehicle, population manager, mission marker, mission start actor, and vertical-slice director. M4 population NPCs use a minimal active-movement tick to feed CharacterMovement smoothly; that tick is disabled for dormant NPCs. M3 interaction focus and M4 population decisions use timers rather than per-frame global searches.
 
 Optimization should be profiling-led, while obvious scalability traps are rejected early.
 
