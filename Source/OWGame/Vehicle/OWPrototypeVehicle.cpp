@@ -43,10 +43,9 @@ AOWPrototypeVehicle::AOWPrototypeVehicle()
     VehicleMesh->SetCollisionProfileName(TEXT("BlockAll"));
     VehicleMesh->SetRelativeScale3D(FVector(2.5f, 1.3f, 0.6f));
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if (CubeMeshFinder.Succeeded())
+    if (UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
     {
-        VehicleMesh->SetStaticMesh(CubeMeshFinder.Object);
+        VehicleMesh->SetStaticMesh(CubeMesh);
     }
 
     VehicleMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("VehicleMovement"));
