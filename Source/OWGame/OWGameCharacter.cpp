@@ -79,6 +79,11 @@ AOWGameCharacter::AOWGameCharacter()
     }
 }
 
+void AOWGameCharacter::ActivateOnFootInput()
+{
+    ActivateOnFootInput();
+}
+
 void AOWGameCharacter::BeginPlay()
 {
     Super::BeginPlay();
@@ -95,9 +100,7 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
     // Resolve again at runtime so PIE remains robust even when constructor-time
     // asset lookup did not bind an editor-created input asset.
-    ResolveInputAssets();
-    BuildRuntimeMappingContext();
-    ApplyDefaultMappingContext();
+    ActivateOnFootInput();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
