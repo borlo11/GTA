@@ -45,6 +45,7 @@ protected:
     void ExitVehicle();
 
     void ResolveInputAssets();
+    void BuildRuntimeVehicleMappingContext();
     void AddVehicleMappingContext(AController* InController);
     void RemoveVehicleMappingContext(AController* InController);
     void RestoreDriverCharacter();
@@ -63,6 +64,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputMappingContext> VehicleMappingContext;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputMappingContext> RuntimeVehicleMappingContext;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputAction> ThrottleAction;
