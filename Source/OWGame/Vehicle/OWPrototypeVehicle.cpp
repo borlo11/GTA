@@ -251,6 +251,7 @@ void AOWPrototypeVehicle::ExitVehicle()
     }
 
     PlayerController->Possess(Character);
+    Character->ActivateOnFootInput();
 
     UE_LOG(LogOWGame, Log, TEXT("%s exited vehicle %s."), *Character->GetName(), *GetName());
 }
@@ -313,6 +314,19 @@ void AOWPrototypeVehicle::BuildRuntimeVehicleMappingContext()
     AddNegate(SteerLeft);
 
     RuntimeVehicleMappingContext->MapKey(SteerAction, EKeys::D);
+    if (LookAction)
+    {
+        RuntimeVehicleMappingContext->MapKey(LookAction, EKeys::MouseX);
+
+        FEnhancedActionKeyMapping& LookY =
+            RuntimeVehicleMappingContext->MapKey(LookAction, EKeys::MouseY);
+        UInputModifierSwizzleAxis* Swizzle =
+            NewObject<UInputModifierSwizzleAxis>(RuntimeVehicleMappingContext);
+        Swizzle->Order = EInputAxisSwizzle::YXZ;
+        LookY.Modifiers.Add(Swizzle);
+        LookY.Modifiers.Add(NewObject<UInputModifierNegate>(RuntimeVehicleMappingContext));
+    }
+
     RuntimeVehicleMappingContext->MapKey(BrakeAction, EKeys::SpaceBar);
     RuntimeVehicleMappingContext->MapKey(ExitAction, EKeys::E);
 
@@ -323,15 +337,15 @@ void AOWPrototypeVehicle::AddVehicleMappingContext(AController* InController)
 {
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = GetEnhancedInputSubsystem(InController))
     {
-        if (VehicleMappingContext)
-        {
-            Subsystem->RemoveMappingContext(VehicleMappingContext);
-        }
+        // M2 gives the vehicle exclusive ownership of gameplay keys while it is
+        // possessed. This prevents the on-foot E/WASD mappings from competing
+        // with vehicle actions.
+        Subsystem->ClearAllMappings();
 
         if (RuntimeVehicleMappingContext)
         {
-            Subsystem->RemoveMappingContext(RuntimeVehicleMappingContext);
             Subsystem->AddMappingContext(RuntimeVehicleMappingContext, 10);
+            UE_LOG(LogOWGame, Log, TEXT("Applied exclusive vehicle mapping context to %s."), *GetName());
         }
         else
         {
