@@ -100,6 +100,7 @@ void UOWMissionComponent::ResetMission(bool bDeleteSave)
     MissionState = EOWMissionState::Inactive;
     CurrentObjectiveIndex = INDEX_NONE;
     FailureReason = FText::GetEmpty();
+    CachedObjectiveDistance = -1.0f;
 
     DestroyMarker();
 
@@ -120,6 +121,7 @@ void UOWMissionComponent::FailMission(const FText& Reason)
 
     MissionState = EOWMissionState::Failed;
     FailureReason = Reason;
+    CachedObjectiveDistance = -1.0f;
     DestroyMarker();
     SaveMissionProgress();
 
@@ -227,24 +229,6 @@ FVector UOWMissionComponent::ResolveCurrentObjectiveLocation(bool& bHasLocation)
     return FVector::ZeroVector;
 }
 
-float UOWMissionComponent::GetCurrentObjectiveDistance() const
-{
-    const AOWGamePlayerController* PlayerController =
-        Cast<AOWGamePlayerController>(GetOwner());
-    const APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
-    if (!PlayerPawn)
-    {
-        return -1.0f;
-    }
-
-    bool bHasLocation = false;
-    const FVector TargetLocation = ResolveCurrentObjectiveLocation(bHasLocation);
-
-    return bHasLocation
-        ? FVector::Dist2D(PlayerPawn->GetActorLocation(), TargetLocation)
-        : -1.0f;
-}
-
 void UOWMissionComponent::EvaluateCurrentObjective()
 {
     if (MissionState != EOWMissionState::Active ||
@@ -342,6 +326,7 @@ void UOWMissionComponent::CompleteMission()
 {
     MissionState = EOWMissionState::Completed;
     CurrentObjectiveIndex = Objectives.Num();
+    CachedObjectiveDistance = -1.0f;
     DestroyMarker();
     SaveMissionProgress();
 
@@ -410,8 +395,27 @@ void UOWMissionComponent::UpdateMarker()
 
     if (!bHasLocation)
     {
+        CachedObjectiveDistance = -1.0f;
         DestroyMarker();
         return;
+    }
+
+    if (const AOWGamePlayerController* PlayerController =
+        Cast<AOWGamePlayerController>(GetOwner()))
+    {
+        if (const APawn* PlayerPawn = PlayerController->GetPawn())
+        {
+            CachedObjectiveDistance =
+                FVector::Dist2D(PlayerPawn->GetActorLocation(), TargetLocation);
+        }
+        else
+        {
+            CachedObjectiveDistance = -1.0f;
+        }
+    }
+    else
+    {
+        CachedObjectiveDistance = -1.0f;
     }
 
     EnsureMarker();
