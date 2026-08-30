@@ -35,8 +35,8 @@ Pedestrians:
 - use ABP_Unarmed for locomotion,
 - choose local wandering destinations around a home point,
 - occasionally stop and idle,
-- do not implement a custom Actor Tick,
-- update their simple steering through timers,
+- use a minimal Actor Tick only while active to feed CharacterMovement smoothly,
+- keep destination/idle decisions on timers rather than doing global logic every frame,
 - reduce update frequency as they get farther from the player.
 
 ## Simulation tiers
@@ -64,7 +64,7 @@ The target count is intentionally small while behavior and cost are being valida
 ## Performance rules
 
 - No custom Actor Tick on the population manager.
-- No custom Actor Tick on pedestrian NPCs.
+- Pedestrian NPC Actor Tick is limited to active smooth locomotion input; dormant NPCs disable it.
 - No repeated GetAllActorsOfClass scans.
 - Population management runs on a 0.5 s timer by default.
 - Pedestrian decision updates use tiered timers.
