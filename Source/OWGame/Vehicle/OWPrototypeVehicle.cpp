@@ -17,7 +17,7 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
-#include "UObject/ConstructorHelpers.h"
+#include "UObject/UObjectGlobals.h"
 
 namespace
 {
@@ -72,42 +72,12 @@ AOWPrototypeVehicle::AOWPrototypeVehicle()
     bUseControllerRotationYaw = false;
     bUseControllerRotationRoll = false;
 
-    static ConstructorHelpers::FObjectFinder<UInputMappingContext> VehicleContextFinder(TEXT("/Game/Input/IMC_Vehicle"));
-    static ConstructorHelpers::FObjectFinder<UInputAction> ThrottleActionFinder(TEXT("/Game/Input/IA_VehicleThrottle"));
-    static ConstructorHelpers::FObjectFinder<UInputAction> SteerActionFinder(TEXT("/Game/Input/IA_VehicleSteer"));
-    static ConstructorHelpers::FObjectFinder<UInputAction> BrakeActionFinder(TEXT("/Game/Input/IA_VehicleBrake"));
-    static ConstructorHelpers::FObjectFinder<UInputAction> ExitActionFinder(TEXT("/Game/Input/IA_VehicleExit"));
-    static ConstructorHelpers::FObjectFinder<UInputAction> LookActionFinder(TEXT("/Game/Input/IA_Look"));
-
-    if (VehicleContextFinder.Succeeded())
-    {
-        VehicleMappingContext = VehicleContextFinder.Object;
-    }
-    if (ThrottleActionFinder.Succeeded())
-    {
-        ThrottleAction = ThrottleActionFinder.Object;
-    }
-    if (SteerActionFinder.Succeeded())
-    {
-        SteerAction = SteerActionFinder.Object;
-    }
-    if (BrakeActionFinder.Succeeded())
-    {
-        BrakeAction = BrakeActionFinder.Object;
-    }
-    if (ExitActionFinder.Succeeded())
-    {
-        ExitAction = ExitActionFinder.Object;
-    }
-    if (LookActionFinder.Succeeded())
-    {
-        LookAction = LookActionFinder.Object;
-    }
 }
 
 void AOWPrototypeVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
+    ResolveInputAssets();
 
     UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
     if (!EnhancedInput)
@@ -141,6 +111,7 @@ void AOWPrototypeVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void AOWPrototypeVehicle::PossessedBy(AController* NewController)
 {
     Super::PossessedBy(NewController);
+    ResolveInputAssets();
     AddVehicleMappingContext(NewController);
 }
 
@@ -279,6 +250,34 @@ void AOWPrototypeVehicle::ExitVehicle()
     PlayerController->Possess(Character);
 
     UE_LOG(LogOWGame, Log, TEXT("%s exited vehicle %s."), *Character->GetName(), *GetName());
+}
+
+void AOWPrototypeVehicle::ResolveInputAssets()
+{
+    if (!VehicleMappingContext)
+    {
+        VehicleMappingContext = LoadObject<UInputMappingContext>(nullptr, TEXT("/Game/Input/IMC_Vehicle.IMC_Vehicle"));
+    }
+    if (!ThrottleAction)
+    {
+        ThrottleAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_VehicleThrottle.IA_VehicleThrottle"));
+    }
+    if (!SteerAction)
+    {
+        SteerAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_VehicleSteer.IA_VehicleSteer"));
+    }
+    if (!BrakeAction)
+    {
+        BrakeAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_VehicleBrake.IA_VehicleBrake"));
+    }
+    if (!ExitAction)
+    {
+        ExitAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_VehicleExit.IA_VehicleExit"));
+    }
+    if (!LookAction)
+    {
+        LookAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_Look.IA_Look"));
+    }
 }
 
 void AOWPrototypeVehicle::AddVehicleMappingContext(AController* InController)
