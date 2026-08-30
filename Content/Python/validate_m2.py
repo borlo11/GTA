@@ -29,7 +29,7 @@ def validate_input():
     steer = load_required_asset("IA_VehicleSteer", unreal.InputAction)
     brake = load_required_asset("IA_VehicleBrake", unreal.InputAction)
     exit_action = load_required_asset("IA_VehicleExit", unreal.InputAction)
-    look = load_required_asset("IA_Look", unreal.InputAction)
+    load_required_asset("IA_Look", unreal.InputAction)
     imc = load_required_asset("IMC_Vehicle", unreal.InputMappingContext)
 
     require(
@@ -66,8 +66,6 @@ def validate_input():
         ("IA_VehicleThrottle", "S"),
         ("IA_VehicleSteer", "A"),
         ("IA_VehicleSteer", "D"),
-        ("IA_Look", "MouseX"),
-        ("IA_Look", "MouseY"),
         ("IA_VehicleBrake", "SpaceBar"),
         ("IA_VehicleExit", "E"),
     }
