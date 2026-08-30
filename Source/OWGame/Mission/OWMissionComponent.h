@@ -44,7 +44,10 @@ public:
     FText GetCurrentObjectiveText() const;
 
     UFUNCTION(BlueprintPure, Category="Mission")
-    float GetCurrentObjectiveDistance() const;
+    float GetCurrentObjectiveDistance() const { return CachedObjectiveDistance; }
+
+    UFUNCTION(BlueprintPure, Category="Mission")
+    float GetObjectiveUpdateInterval() const { return ObjectiveUpdateInterval; }
 
     UFUNCTION(BlueprintPure, Category="Mission")
     bool IsMissionActive() const { return MissionState == EOWMissionState::Active; }
@@ -90,5 +93,6 @@ protected:
     FString SaveSlotName = TEXT("OWGame_MissionState_0");
 
     FText FailureReason;
+    float CachedObjectiveDistance = -1.0f;
     FTimerHandle ObjectiveTimer;
 };
