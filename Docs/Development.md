@@ -58,6 +58,10 @@ M3.1 uses the free Unreal Engine Third Person template mannequin content. Add th
 
 M4 is code-only on top of the M3.1 mannequin content. It adds `AOWPopulationManager`, `AOWPopulationNPC`, distance-based simulation tiers, runtime spawn/despawn, timer-driven decisions, and a minimal active locomotion tick for smooth CharacterMovement input. See `Docs/Milestone4.md`.
 
+## Milestone 4.5 City Sample integration
+
+M4.5 begins with a read-only discovery pass against a separate City Sample project before any migration. Use `Tools/CitySample/inspect_city_sample.py` and follow `Docs/Milestone4_5.md`. The target OWGame map will be `/Game/Maps/OW_CitySample_Small` after the curated migration stage.
+
 ## Input assets
 
 On-foot baseline:
