@@ -1,6 +1,9 @@
 #include "OWGameCharacter.h"
 #include "OWGame.h"
 #include "Interaction/OWInteractable.h"
+#include "Combat/OWHealthComponent.h"
+#include "OWGamePlayerController.h"
+#include "Police/OWPoliceOfficer.h"
 
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -114,6 +117,8 @@ AOWGameCharacter::AOWGameCharacter()
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
     FollowCamera->SetFieldOfView(90.0f);
+
+    HealthComponent = CreateDefaultSubobject<UOWHealthComponent>(TEXT("HealthComponent"));
 
     static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultContextFinder(TEXT("/Game/Input/IMC_Default"));
     static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionFinder(TEXT("/Game/Input/IA_Move"));
@@ -266,6 +271,11 @@ void AOWGameCharacter::BeginPlay()
     TryApplyTemplateSkeletalCharacter();
     ActivateOnFootInput();
 
+    if (HealthComponent)
+    {
+        HealthComponent->OnDeath.AddDynamic(this, &AOWGameCharacter::HandlePlayerDeath);
+    }
+
     GetWorldTimerManager().SetTimer(
         InteractionFocusTimer,
         this,
@@ -313,6 +323,9 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Released, this, &AOWGameCharacter::StopSprint);
     PlayerInputComponent->BindKey(EKeys::RightShift, IE_Pressed, this, &AOWGameCharacter::StartSprint);
     PlayerInputComponent->BindKey(EKeys::RightShift, IE_Released, this, &AOWGameCharacter::StopSprint);
+
+    PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &AOWGameCharacter::FirePrototypeWeapon);
+    PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AOWGameCharacter::PerformMeleeAttack);
 }
 
 void AOWGameCharacter::ResolveInputAssets()
@@ -548,4 +561,257 @@ void AOWGameCharacter::TryInteract()
     {
         IOWInteractable::Execute_Interact(Interactable, this);
     }
+}
+
+
+AActor* AOWGameCharacter::FindCombatTarget(
+    const FVector& Start,
+    const FVector& End,
+    float SweepRadius,
+    FVector& OutImpactPoint) const
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    FVector LimitedEnd = End;
+
+    FCollisionQueryParams WorldQuery(SCENE_QUERY_STAT(OWCombatWorldBlock), false, this);
+    FHitResult WorldHit;
+    if (World->LineTraceSingleByChannel(
+        WorldHit,
+        Start,
+        End,
+        ECC_Visibility,
+        WorldQuery))
+    {
+        LimitedEnd = WorldHit.ImpactPoint;
+    }
+
+    FCollisionObjectQueryParams PawnObjects;
+    PawnObjects.AddObjectTypesToQuery(ECC_Pawn);
+
+    FCollisionQueryParams PawnQuery(SCENE_QUERY_STAT(OWCombatPawnSweep), false, this);
+    TArray<FHitResult> PawnHits;
+
+    World->SweepMultiByObjectType(
+        PawnHits,
+        Start,
+        LimitedEnd,
+        FQuat::Identity,
+        PawnObjects,
+        FCollisionShape::MakeSphere(SweepRadius),
+        PawnQuery);
+
+    AActor* BestActor = nullptr;
+    float BestDistanceSquared = TNumericLimits<float>::Max();
+    FVector BestImpact = LimitedEnd;
+
+    for (const FHitResult& Hit : PawnHits)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (!IsValid(HitActor) || HitActor == this)
+        {
+            continue;
+        }
+
+        UOWHealthComponent* TargetHealth =
+            HitActor->FindComponentByClass<UOWHealthComponent>();
+        if (!TargetHealth || TargetHealth->IsDead())
+        {
+            continue;
+        }
+
+        const float DistanceSquared =
+            FVector::DistSquared(Start, Hit.ImpactPoint);
+
+        if (DistanceSquared < BestDistanceSquared)
+        {
+            BestDistanceSquared = DistanceSquared;
+            BestActor = HitActor;
+            BestImpact = Hit.ImpactPoint;
+        }
+    }
+
+    OutImpactPoint = BestImpact;
+    return BestActor;
+}
+
+void AOWGameCharacter::ReportCombatCrime(AActor* HitActor, bool bMelee)
+{
+    AOWGamePlayerController* OWController =
+        Cast<AOWGamePlayerController>(GetController());
+    if (!OWController)
+    {
+        return;
+    }
+
+    if (bMelee)
+    {
+        if (HitActor)
+        {
+            OWController->ReportPrototypeCrime(
+                Cast<AOWPoliceOfficer>(HitActor) ? 2 : 1);
+        }
+        return;
+    }
+
+    // Discharging the prototype firearm is already a crime.
+    OWController->ReportPrototypeCrime(1);
+
+    if (Cast<AOWPoliceOfficer>(HitActor))
+    {
+        OWController->ReportPrototypeCrime(1);
+    }
+}
+
+void AOWGameCharacter::ApplyCombatHit(
+    AActor* HitActor,
+    float DamageAmount,
+    bool bMelee)
+{
+    if (!IsValid(HitActor))
+    {
+        ReportCombatCrime(nullptr, bMelee);
+        return;
+    }
+
+    UOWHealthComponent* TargetHealth =
+        HitActor->FindComponentByClass<UOWHealthComponent>();
+
+    if (!TargetHealth || TargetHealth->IsDead())
+    {
+        ReportCombatCrime(nullptr, bMelee);
+        return;
+    }
+
+    const bool bApplied =
+        TargetHealth->ApplyCombatDamage(DamageAmount, this);
+
+    if (bApplied)
+    {
+        ReportCombatCrime(HitActor, bMelee);
+    }
+}
+
+void AOWGameCharacter::FirePrototypeWeapon()
+{
+    if (!FollowCamera || !GetWorld() || !IsLocallyControlled())
+    {
+        return;
+    }
+
+    if (HealthComponent && HealthComponent->IsDead())
+    {
+        return;
+    }
+
+    const FVector Start = FollowCamera->GetComponentLocation();
+    const FVector End =
+        Start + FollowCamera->GetForwardVector() * RangedRange;
+
+    FVector ImpactPoint = End;
+    AActor* Target =
+        FindCombatTarget(Start, End, RangedSweepRadius, ImpactPoint);
+
+    ApplyCombatHit(Target, RangedDamage, false);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    DrawDebugLine(
+        GetWorld(),
+        Start,
+        ImpactPoint,
+        Target ? FColor::Green : FColor::Red,
+        false,
+        0.12f,
+        0,
+        1.5f);
+
+    if (Target)
+    {
+        DrawDebugSphere(
+            GetWorld(),
+            ImpactPoint,
+            14.0f,
+            8,
+            FColor::Yellow,
+            false,
+            0.12f);
+    }
+#endif
+
+    UE_LOG(
+        LogOWGame,
+        Log,
+        TEXT("Prototype shot fired. Target=%s."),
+        *GetNameSafe(Target));
+}
+
+void AOWGameCharacter::PerformMeleeAttack()
+{
+    if (!GetWorld() || !Controller || !IsLocallyControlled())
+    {
+        return;
+    }
+
+    if (HealthComponent && HealthComponent->IsDead())
+    {
+        return;
+    }
+
+    const FVector Start =
+        GetActorLocation() + FVector(0.0f, 0.0f, 55.0f);
+
+    const FRotator ControlRotation = Controller->GetControlRotation();
+    const FRotator YawOnly(0.0f, ControlRotation.Yaw, 0.0f);
+    const FVector Forward =
+        FRotationMatrix(YawOnly).GetUnitAxis(EAxis::X);
+
+    const FVector End = Start + Forward * MeleeRange;
+
+    FVector ImpactPoint = End;
+    AActor* Target =
+        FindCombatTarget(Start, End, MeleeSweepRadius, ImpactPoint);
+
+    ApplyCombatHit(Target, MeleeDamage, true);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    DrawDebugLine(
+        GetWorld(),
+        Start,
+        End,
+        Target ? FColor::Green : FColor::Orange,
+        false,
+        0.15f,
+        0,
+        2.0f);
+#endif
+
+    UE_LOG(
+        LogOWGame,
+        Log,
+        TEXT("Prototype melee attack. Target=%s."),
+        *GetNameSafe(Target));
+}
+
+void AOWGameCharacter::HandlePlayerDeath(AActor* DeadActor)
+{
+    GetWorldTimerManager().ClearTimer(InteractionFocusTimer);
+    InteractionPrompt = FText::GetEmpty();
+
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->DisableMovement();
+    }
+
+    if (APlayerController* PlayerController =
+        Cast<APlayerController>(GetController()))
+    {
+        PlayerController->SetIgnoreMoveInput(true);
+        PlayerController->SetIgnoreLookInput(true);
+    }
+
+    UE_LOG(LogOWGame, Log, TEXT("Player character reached zero health."));
 }

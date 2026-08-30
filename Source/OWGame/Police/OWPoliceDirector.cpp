@@ -199,7 +199,7 @@ void AOWPoliceDirector::UpdatePoliceResponse()
     for (int32 Index = Officers.Num() - 1; Index >= 0; --Index)
     {
         AOWPoliceOfficer* Officer = Officers[Index];
-        if (!IsValid(Officer))
+        if (!IsValid(Officer) || Officer->IsDead())
         {
             Officers.RemoveAtSwap(Index);
             continue;

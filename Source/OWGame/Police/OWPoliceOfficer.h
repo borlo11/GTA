@@ -5,6 +5,7 @@
 #include "OWPoliceOfficer.generated.h"
 
 class AOWGamePlayerController;
+class UOWHealthComponent;
 class UTextRenderComponent;
 
 UCLASS()
@@ -26,14 +27,26 @@ public:
     UFUNCTION(BlueprintPure, Category="Police")
     float GetSightRange() const { return SightRange; }
 
+    UFUNCTION(BlueprintPure, Category="Combat")
+    UOWHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    bool IsDead() const;
+
 protected:
     void ApplyPoliceVisuals();
     bool CanSeeTargetPawn(const APawn* TargetPawn) const;
     FVector GetSearchDestination(const FVector& LastKnownLocation);
     void StopPursuitMovement();
 
+    UFUNCTION()
+    void HandleDeath(AActor* DeadActor);
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Police")
     TObjectPtr<UTextRenderComponent> PoliceLabel;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Combat")
+    TObjectPtr<UOWHealthComponent> HealthComponent;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Police", meta=(ClampMin="100.0", ClampMax="1200.0"))
     float ChaseSpeed = 620.0f;

@@ -32,7 +32,7 @@ Minimal crime reporting, persistent 0-3 wanted state, police response, pursuit/s
 
 ## M6 — Combat prototype
 
-Focused ranged/melee foundations with animation and damage architecture.
+Reusable health/damage architecture, camera-directed ranged combat, short-range melee, death cleanup, HUD feedback, and wanted integration.
 
 ## M7 — Mission framework
 

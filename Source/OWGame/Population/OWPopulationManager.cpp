@@ -129,7 +129,7 @@ void AOWPopulationManager::UpdatePopulation()
     for (int32 Index = Population.Num() - 1; Index >= 0; --Index)
     {
         AOWPopulationNPC* NPC = Population[Index];
-        if (!IsValid(NPC))
+        if (!IsValid(NPC) || NPC->IsDead())
         {
             Population.RemoveAtSwap(Index);
             continue;

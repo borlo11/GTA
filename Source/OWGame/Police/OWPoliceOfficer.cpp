@@ -3,6 +3,7 @@
 #include "../OWGame.h"
 #include "../OWGamePlayerController.h"
 #include "../Crime/OWWantedComponent.h"
+#include "../Combat/OWHealthComponent.h"
 
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -40,6 +41,8 @@ AOWPoliceOfficer::AOWPoliceOfficer()
     PoliceLabel->SetWorldSize(26.0f);
     PoliceLabel->SetTextRenderColor(FColor(50, 120, 255));
     PoliceLabel->SetText(FText::FromString(TEXT("POLICE")));
+
+    HealthComponent = CreateDefaultSubobject<UOWHealthComponent>(TEXT("HealthComponent"));
 }
 
 void AOWPoliceOfficer::BeginPlay()
@@ -49,10 +52,20 @@ void AOWPoliceOfficer::BeginPlay()
     SearchRandom.Initialize(static_cast<int32>(GetUniqueID()));
     ApplyPoliceVisuals();
 
+    if (HealthComponent)
+    {
+        HealthComponent->OnDeath.AddDynamic(this, &AOWPoliceOfficer::HandleDeath);
+    }
+
     if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
         Movement->SetMovementMode(MOVE_Walking);
     }
+}
+
+bool AOWPoliceOfficer::IsDead() const
+{
+    return HealthComponent && HealthComponent->IsDead();
 }
 
 void AOWPoliceOfficer::InitializePoliceTarget(AOWGamePlayerController* InTargetController)
@@ -157,6 +170,11 @@ void AOWPoliceOfficer::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
+    if (IsDead())
+    {
+        return;
+    }
+
     AOWGamePlayerController* PlayerController = TargetController.Get();
     UOWWantedComponent* Wanted = PlayerController ? PlayerController->GetWantedComponent() : nullptr;
     APawn* TargetPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
@@ -209,4 +227,33 @@ void AOWPoliceOfficer::Tick(float DeltaSeconds)
 
     const FRotator TargetRotation(0.0f, Direction.Rotation().Yaw, 0.0f);
     SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, 7.0f));
+}
+
+
+void AOWPoliceOfficer::HandleDeath(AActor* DeadActor)
+{
+    StopPursuitMovement();
+    SetActorTickEnabled(false);
+
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->DisableMovement();
+        Movement->SetComponentTickEnabled(false);
+    }
+
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+    {
+        CharacterMesh->SetComponentTickEnabled(false);
+    }
+
+    if (PoliceLabel)
+    {
+        PoliceLabel->SetVisibility(false);
+    }
+
+    SetLifeSpan(3.0f);
+
+    UE_LOG(LogOWGame, Log, TEXT("Police officer %s died."), *GetName());
 }

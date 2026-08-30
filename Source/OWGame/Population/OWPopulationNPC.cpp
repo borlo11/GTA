@@ -1,6 +1,7 @@
 #include "OWPopulationNPC.h"
 
 #include "../OWGame.h"
+#include "../Combat/OWHealthComponent.h"
 
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -28,6 +29,8 @@ AOWPopulationNPC::AOWPopulationNPC()
     Movement->MaxAcceleration = 900.0f;
     Movement->BrakingDecelerationWalking = 650.0f;
     Movement->GroundFriction = 4.0f;
+
+    HealthComponent = CreateDefaultSubobject<UOWHealthComponent>(TEXT("HealthComponent"));
 }
 
 void AOWPopulationNPC::BeginPlay()
@@ -43,6 +46,11 @@ void AOWPopulationNPC::BeginPlay()
     }
 
     ApplyTemplateVisuals();
+
+    if (HealthComponent)
+    {
+        HealthComponent->OnDeath.AddDynamic(this, &AOWPopulationNPC::HandleDeath);
+    }
 
     if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
@@ -106,8 +114,17 @@ void AOWPopulationNPC::ApplyTemplateVisuals()
     CharacterMesh->SetVisibility(true, true);
 }
 
+bool AOWPopulationNPC::IsDead() const
+{
+    return HealthComponent && HealthComponent->IsDead();
+}
+
 void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
 {
+    if (IsDead())
+    {
+        return;
+    }
     if (SimulationTier == NewTier)
     {
         return;
@@ -152,7 +169,7 @@ void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
 
 void AOWPopulationNPC::ScheduleSimulationTimer()
 {
-    if (!GetWorld() || SimulationTier == EOWPopulationSimulationTier::Dormant)
+    if (!GetWorld() || SimulationTier == EOWPopulationSimulationTier::Dormant || IsDead())
     {
         return;
     }
@@ -203,7 +220,7 @@ void AOWPopulationNPC::StopHorizontalMovement()
 void AOWPopulationNPC::UpdateWander()
 {
     UWorld* World = GetWorld();
-    if (!World || SimulationTier == EOWPopulationSimulationTier::Dormant)
+    if (!World || SimulationTier == EOWPopulationSimulationTier::Dormant || IsDead())
     {
         return;
     }
@@ -239,7 +256,7 @@ void AOWPopulationNPC::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    if (SimulationTier == EOWPopulationSimulationTier::Dormant || bWaitingAtDestination)
+    if (SimulationTier == EOWPopulationSimulationTier::Dormant || bWaitingAtDestination || IsDead())
     {
         return;
     }
@@ -282,4 +299,30 @@ void AOWPopulationNPC::Tick(float DeltaSeconds)
             TargetRotation,
             DeltaSeconds,
             5.0f));
+}
+
+
+void AOWPopulationNPC::HandleDeath(AActor* DeadActor)
+{
+    GetWorldTimerManager().ClearTimer(SimulationTimer);
+    StopHorizontalMovement();
+
+    SetActorTickEnabled(false);
+
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->DisableMovement();
+        Movement->SetComponentTickEnabled(false);
+    }
+
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+    {
+        CharacterMesh->SetComponentTickEnabled(false);
+    }
+
+    SetLifeSpan(3.0f);
+
+    UE_LOG(LogOWGame, Log, TEXT("Population NPC %s died."), *GetName());
 }
