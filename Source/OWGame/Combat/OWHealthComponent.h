@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "OWHealthComponent.generated.h"
 
+class UOWHealthComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FOWHealthChangedSignature,
     UOWHealthComponent*, HealthComponent,
