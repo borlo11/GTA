@@ -7,6 +7,7 @@
 #include "OWGameCharacter.generated.h"
 
 class UCameraComponent;
+class UOWHealthComponent;
 class USceneComponent;
 class USpringArmComponent;
 class UStaticMeshComponent;
@@ -42,6 +43,21 @@ public:
     UFUNCTION(BlueprintPure, Category="Visual")
     bool IsUsingTemplateSkeletalCharacter() const;
 
+    UFUNCTION(BlueprintPure, Category="Combat")
+    UOWHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    float GetRangedDamage() const { return RangedDamage; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    float GetMeleeDamage() const { return MeleeDamage; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    float GetRangedRange() const { return RangedRange; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    float GetMeleeRange() const { return MeleeRange; }
+
     void ActivateOnFootInput();
 
 protected:
@@ -52,6 +68,18 @@ protected:
     void StartSprint();
     void StopSprint();
     void TryInteract();
+    void FirePrototypeWeapon();
+    void PerformMeleeAttack();
+    AActor* FindCombatTarget(
+        const FVector& Start,
+        const FVector& End,
+        float SweepRadius,
+        FVector& OutImpactPoint) const;
+    void ReportCombatCrime(AActor* HitActor, bool bMelee);
+    void ApplyCombatHit(AActor* HitActor, float DamageAmount, bool bMelee);
+
+    UFUNCTION()
+    void HandlePlayerDeath(AActor* DeadActor);
 
     void ResolveInputAssets();
     void BuildRuntimeMappingContext();
@@ -88,6 +116,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<UCameraComponent> FollowCamera;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Combat")
+    TObjectPtr<UOWHealthComponent> HealthComponent;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
     TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -127,6 +158,24 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction", meta=(ClampMin="0.05", ClampMax="1.0"))
     float InteractionFocusInterval = 0.12f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="1.0", ClampMax="500.0"))
+    float RangedDamage = 40.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="100.0", ClampMax="20000.0"))
+    float RangedRange = 6000.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="1.0", ClampMax="200.0"))
+    float RangedSweepRadius = 28.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="1.0", ClampMax="500.0"))
+    float MeleeDamage = 55.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="50.0", ClampMax="500.0"))
+    float MeleeRange = 190.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat", meta=(ClampMin="20.0", ClampMax="250.0"))
+    float MeleeSweepRadius = 85.0f;
 
     UPROPERTY(Transient)
     FText InteractionPrompt;
