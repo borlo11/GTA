@@ -83,6 +83,7 @@ bool AOWPoliceDirector::FindGroundedSpawnLocation(
         return false;
     }
 
+#if WITH_EDITOR
     if (const AActor* GroundActor = GroundHit.GetActor())
     {
         if (GroundActor->GetActorLabel().Contains(TEXT("Building")))
@@ -90,6 +91,7 @@ bool AOWPoliceDirector::FindGroundedSpawnLocation(
             return false;
         }
     }
+#endif
 
     OutLocation = GroundHit.ImpactPoint + FVector(0.0f, 0.0f, 96.0f);
     return true;
