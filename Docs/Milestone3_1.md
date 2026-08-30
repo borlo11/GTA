@@ -19,7 +19,7 @@ Fallback:
 Expected project paths:
 
 - `/Game/Characters/Mannequins/Meshes/SKM_Manny`
-- `/Game/Characters/Mannequins/Animations/ABP_Manny`
+- `/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed`
 
 The character code also supports Quinn at the equivalent paths.
 
@@ -31,7 +31,7 @@ No paid marketplace asset is required.
 
 ## Runtime behavior
 
-`AOWGameCharacter` attempts to load Manny and `ABP_Manny` at BeginPlay.
+`AOWGameCharacter` first attempts to load `SKM_Manny_Simple` with `ABP_Unarmed` from the UE 5.8 template content at BeginPlay.
 
 If both are present:
 
