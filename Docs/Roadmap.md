@@ -22,6 +22,10 @@ Free UE Third Person mannequin, Animation Blueprint locomotion, and regression v
 
 Small autonomous mannequin pedestrian population with runtime spawn/despawn, distance-based simulation LOD, and profiling discipline.
 
+### M4.5 — City Sample environment integration
+
+Controlled integration of the official City Sample Small City as the first real urban World Partition environment while preserving OWGame gameplay ownership.
+
 ## M5 — Crime / police prototype
 
 Minimal crime reporting, response, pursuit, search, and de-escalation loop.
