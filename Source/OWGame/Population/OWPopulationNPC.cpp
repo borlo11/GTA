@@ -3,7 +3,6 @@
 #include "../OWGame.h"
 
 #include "Animation/AnimInstance.h"
-#include "Animation/AnimationAsset.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -102,16 +101,9 @@ void AOWPopulationNPC::ApplyTemplateVisuals()
     CharacterMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
     CharacterMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CharacterMesh->SetGenerateOverlapEvents(false);
-    IdleAnimation = LoadObject<UAnimationAsset>(
-        nullptr,
-        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle"));
-    WalkAnimation = LoadObject<UAnimationAsset>(
-        nullptr,
-        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.MF_Unarmed_Walk_Fwd"));
-
-    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+    CharacterMesh->SetAnimInstanceClass(AnimClass);
     CharacterMesh->SetVisibility(true, true);
-    SetWalkingVisual(false);
 }
 
 void AOWPopulationNPC::SetSimulationTier(EOWPopulationSimulationTier NewTier)
@@ -202,26 +194,6 @@ void AOWPopulationNPC::StopHorizontalMovement()
         Movement->StopMovementImmediately();
     }
 
-    SetWalkingVisual(false);
-}
-
-void AOWPopulationNPC::SetWalkingVisual(bool bWalking)
-{
-    if (bWalkingVisual == bWalking)
-    {
-        return;
-    }
-
-    USkeletalMeshComponent* CharacterMesh = GetMesh();
-    UAnimationAsset* DesiredAnimation = bWalking ? WalkAnimation : IdleAnimation;
-    if (!CharacterMesh || !DesiredAnimation)
-    {
-        return;
-    }
-
-    CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-    CharacterMesh->PlayAnimation(DesiredAnimation, true);
-    bWalkingVisual = bWalking;
 }
 
 void AOWPopulationNPC::UpdateWander()
@@ -268,12 +240,11 @@ void AOWPopulationNPC::UpdateWander()
     const float DesiredSpeed = WalkSpeed * TierSpeedScale;
     Movement->MaxWalkSpeed = DesiredSpeed;
 
-    // Feed movement through CharacterMovement's requested-move path instead of
-    // writing Velocity directly. ABP_Unarmed derives locomotion state from
-    // movement acceleration, so direct Velocity writes made the capsule move
-    // while the mannequin remained in its idle pose.
+    // Keep movement inside CharacterMovement. The UE 5.8 unarmed Animation
+    // Blueprint derives locomotion from the character's movement state, and
+    // requested-move acceleration keeps the capsule smooth without root-motion
+    // animation sequences translating the actor.
     Movement->RequestDirectMove(Direction * DesiredSpeed, false);
-    SetWalkingVisual(true);
 
     const FRotator TargetRotation(0.0f, Direction.Rotation().Yaw, 0.0f);
     const float RotationStep =
