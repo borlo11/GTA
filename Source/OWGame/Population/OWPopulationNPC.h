@@ -5,6 +5,8 @@
 #include "TimerManager.h"
 #include "OWPopulationNPC.generated.h"
 
+class UOWHealthComponent;
+
 UENUM(BlueprintType)
 enum class EOWPopulationSimulationTier : uint8
 {
@@ -46,12 +48,24 @@ public:
     UFUNCTION(BlueprintPure, Category="Population")
     float GetLowSimulationInterval() const { return LowSimulationInterval; }
 
+    UFUNCTION(BlueprintPure, Category="Combat")
+    UOWHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+    UFUNCTION(BlueprintPure, Category="Combat")
+    bool IsDead() const;
+
 protected:
     void ApplyTemplateVisuals();
     void ScheduleSimulationTimer();
     void UpdateWander();
     void PickNewDestination();
     void StopHorizontalMovement();
+
+    UFUNCTION()
+    void HandleDeath(AActor* DeadActor);
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Combat")
+    TObjectPtr<UOWHealthComponent> HealthComponent;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Population", meta=(ClampMin="50.0", ClampMax="1000.0"))
     float WanderRadius = 450.0f;
