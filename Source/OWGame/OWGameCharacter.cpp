@@ -4,9 +4,12 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
@@ -21,6 +24,27 @@
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 #include "DrawDebugHelpers.h"
 #endif
+
+namespace
+{
+void ConfigurePrototypePart(
+    UStaticMeshComponent* Component,
+    UStaticMesh* Mesh,
+    const FVector& Location,
+    const FVector& Scale)
+{
+    if (!Component)
+    {
+        return;
+    }
+
+    Component->SetStaticMesh(Mesh);
+    Component->SetRelativeLocation(Location);
+    Component->SetRelativeScale3D(Scale);
+    Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Component->SetGenerateOverlapEvents(false);
+}
+}
 
 AOWGameCharacter::AOWGameCharacter()
 {
@@ -37,16 +61,55 @@ AOWGameCharacter::AOWGameCharacter()
     Movement->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
     Movement->JumpZVelocity = 700.0f;
     Movement->AirControl = 0.35f;
-    Movement->MaxWalkSpeed = 500.0f;
+    Movement->MaxWalkSpeed = WalkSpeed;
+
+    VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
+    VisualRoot->SetupAttachment(RootComponent);
+
+    TorsoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TorsoMesh"));
+    TorsoMesh->SetupAttachment(VisualRoot);
+
+    HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadMesh"));
+    HeadMesh->SetupAttachment(VisualRoot);
+
+    LeftArmMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeftArmMesh"));
+    LeftArmMesh->SetupAttachment(VisualRoot);
+
+    RightArmMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightArmMesh"));
+    RightArmMesh->SetupAttachment(VisualRoot);
+
+    LeftLegMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeftLegMesh"));
+    LeftLegMesh->SetupAttachment(VisualRoot);
+
+    RightLegMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightLegMesh"));
+    RightLegMesh->SetupAttachment(VisualRoot);
+
+    UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    UStaticMesh* SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+
+    ConfigurePrototypePart(TorsoMesh, CylinderMesh, FVector(0.0f, 0.0f, 28.0f), FVector(0.36f, 0.28f, 0.62f));
+    ConfigurePrototypePart(HeadMesh, SphereMesh, FVector(0.0f, 0.0f, 82.0f), FVector(0.30f));
+    ConfigurePrototypePart(LeftArmMesh, CylinderMesh, FVector(0.0f, -34.0f, 24.0f), FVector(0.11f, 0.11f, 0.55f));
+    ConfigurePrototypePart(RightArmMesh, CylinderMesh, FVector(0.0f, 34.0f, 24.0f), FVector(0.11f, 0.11f, 0.55f));
+    ConfigurePrototypePart(LeftLegMesh, CylinderMesh, FVector(0.0f, -14.0f, -46.0f), FVector(0.14f, 0.14f, 0.62f));
+    ConfigurePrototypePart(RightLegMesh, CylinderMesh, FVector(0.0f, 14.0f, -46.0f), FVector(0.14f, 0.14f, 0.62f));
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = CameraDistance;
+    CameraBoom->TargetOffset = FVector(0.0f, 0.0f, 35.0f);
+    CameraBoom->SocketOffset = FVector(0.0f, 55.0f, 35.0f);
     CameraBoom->bUsePawnControlRotation = true;
+    CameraBoom->bDoCollisionTest = true;
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->CameraLagSpeed = 12.0f;
+    CameraBoom->bEnableCameraRotationLag = true;
+    CameraBoom->CameraRotationLagSpeed = 18.0f;
 
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+    FollowCamera->SetFieldOfView(90.0f);
 
     static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultContextFinder(TEXT("/Game/Input/IMC_Default"));
     static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionFinder(TEXT("/Game/Input/IA_Move"));
@@ -81,6 +144,11 @@ void AOWGameCharacter::ActivateOnFootInput()
     ResolveInputAssets();
     BuildRuntimeMappingContext();
     ApplyDefaultMappingContext();
+
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->MaxWalkSpeed = WalkSpeed;
+    }
 }
 
 void AOWGameCharacter::BeginPlay()
@@ -89,6 +157,14 @@ void AOWGameCharacter::BeginPlay()
 
     CameraBoom->TargetArmLength = CameraDistance;
     ActivateOnFootInput();
+
+    GetWorldTimerManager().SetTimer(
+        InteractionFocusTimer,
+        this,
+        &AOWGameCharacter::UpdateInteractionFocus,
+        InteractionFocusInterval,
+        true,
+        0.0f);
 }
 
 void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -124,39 +200,34 @@ void AOWGameCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     {
         EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &AOWGameCharacter::TryInteract);
     }
+
+    PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Pressed, this, &AOWGameCharacter::StartSprint);
+    PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Released, this, &AOWGameCharacter::StopSprint);
+    PlayerInputComponent->BindKey(EKeys::RightShift, IE_Pressed, this, &AOWGameCharacter::StartSprint);
+    PlayerInputComponent->BindKey(EKeys::RightShift, IE_Released, this, &AOWGameCharacter::StopSprint);
 }
 
 void AOWGameCharacter::ResolveInputAssets()
 {
     if (!DefaultMappingContext)
     {
-        DefaultMappingContext = LoadObject<UInputMappingContext>(
-            nullptr,
-            TEXT("/Game/Input/IMC_Default.IMC_Default"));
+        DefaultMappingContext = LoadObject<UInputMappingContext>(nullptr, TEXT("/Game/Input/IMC_Default.IMC_Default"));
     }
     if (!MoveAction)
     {
-        MoveAction = LoadObject<UInputAction>(
-            nullptr,
-            TEXT("/Game/Input/IA_Move.IA_Move"));
+        MoveAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_Move.IA_Move"));
     }
     if (!LookAction)
     {
-        LookAction = LoadObject<UInputAction>(
-            nullptr,
-            TEXT("/Game/Input/IA_Look.IA_Look"));
+        LookAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_Look.IA_Look"));
     }
     if (!JumpAction)
     {
-        JumpAction = LoadObject<UInputAction>(
-            nullptr,
-            TEXT("/Game/Input/IA_Jump.IA_Jump"));
+        JumpAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_Jump.IA_Jump"));
     }
     if (!InteractAction)
     {
-        InteractAction = LoadObject<UInputAction>(
-            nullptr,
-            TEXT("/Game/Input/IA_Interact.IA_Interact"));
+        InteractAction = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_Interact.IA_Interact"));
     }
 }
 
@@ -181,8 +252,7 @@ void AOWGameCharacter::BuildRuntimeMappingContext()
 
     auto AddSwizzleToY = [this](FEnhancedActionKeyMapping& Mapping)
     {
-        UInputModifierSwizzleAxis* Swizzle =
-            NewObject<UInputModifierSwizzleAxis>(RuntimeDefaultMappingContext);
+        UInputModifierSwizzleAxis* Swizzle = NewObject<UInputModifierSwizzleAxis>(RuntimeDefaultMappingContext);
         Swizzle->Order = EInputAxisSwizzle::YXZ;
         Mapping.Modifiers.Add(Swizzle);
     };
@@ -198,7 +268,6 @@ void AOWGameCharacter::BuildRuntimeMappingContext()
     AddNegate(MoveA);
 
     RuntimeDefaultMappingContext->MapKey(MoveAction, EKeys::D);
-
     RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseX);
 
     FEnhancedActionKeyMapping& LookY = RuntimeDefaultMappingContext->MapKey(LookAction, EKeys::MouseY);
@@ -223,8 +292,7 @@ void AOWGameCharacter::ApplyDefaultMappingContext()
         return;
     }
 
-    UEnhancedInputLocalPlayerSubsystem* Subsystem =
-        LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+    UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
     if (!Subsystem)
     {
         return;
@@ -281,49 +349,95 @@ void AOWGameCharacter::StopJump()
     StopJumping();
 }
 
-void AOWGameCharacter::TryInteract()
+void AOWGameCharacter::StartSprint()
 {
-    if (!FollowCamera || !GetWorld())
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
-        return;
+        Movement->MaxWalkSpeed = SprintSpeed;
+    }
+}
+
+void AOWGameCharacter::StopSprint()
+{
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->MaxWalkSpeed = WalkSpeed;
+    }
+}
+
+AActor* AOWGameCharacter::FindInteractableInView() const
+{
+    if (!FollowCamera || !GetWorld() || !Controller)
+    {
+        return nullptr;
     }
 
     const FVector Start = FollowCamera->GetComponentLocation();
     const FVector End = Start + (FollowCamera->GetForwardVector() * InteractionRange);
 
-    FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OWInteractionTrace), false, this);
-    FHitResult Hit;
+    FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OWInteractionFocus), false, this);
+    TArray<FHitResult> Hits;
 
-    const bool bHit = GetWorld()->LineTraceSingleByChannel(
-        Hit,
+    GetWorld()->SweepMultiByChannel(
+        Hits,
         Start,
         End,
+        FQuat::Identity,
         ECC_Visibility,
+        FCollisionShape::MakeSphere(InteractionAssistRadius),
         QueryParams);
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
     if (bDrawInteractionTrace)
     {
-        DrawDebugLine(
-            GetWorld(),
-            Start,
-            End,
-            bHit ? FColor::Green : FColor::Red,
-            false,
-            1.0f,
-            0,
-            1.0f);
+        DrawDebugLine(GetWorld(), Start, End, Hits.Num() > 0 ? FColor::Green : FColor::Red, false, InteractionFocusInterval, 0, 1.0f);
     }
 #endif
 
-    AActor* HitActor = Hit.GetActor();
-    if (!bHit || !IsValid(HitActor) || !HitActor->GetClass()->ImplementsInterface(UOWInteractable::StaticClass()))
+    for (const FHitResult& Hit : Hits)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (!IsValid(HitActor) || !HitActor->GetClass()->ImplementsInterface(UOWInteractable::StaticClass()))
+        {
+            continue;
+        }
+
+        if (IOWInteractable::Execute_CanInteract(HitActor, const_cast<AOWGameCharacter*>(this)))
+        {
+            return HitActor;
+        }
+    }
+
+    return nullptr;
+}
+
+void AOWGameCharacter::UpdateInteractionFocus()
+{
+    if (!IsLocallyControlled())
+    {
+        FocusedInteractable.Reset();
+        InteractionPrompt = FText::GetEmpty();
+        return;
+    }
+
+    AActor* FocusedActor = FindInteractableInView();
+    FocusedInteractable = FocusedActor;
+
+    InteractionPrompt = FocusedActor
+        ? IOWInteractable::Execute_GetInteractionPrompt(FocusedActor, this)
+        : FText::GetEmpty();
+}
+
+void AOWGameCharacter::TryInteract()
+{
+    AActor* Interactable = FindInteractableInView();
+    if (!Interactable)
     {
         return;
     }
 
-    if (IOWInteractable::Execute_CanInteract(HitActor, this))
+    if (IOWInteractable::Execute_CanInteract(Interactable, this))
     {
-        IOWInteractable::Execute_Interact(HitActor, this);
+        IOWInteractable::Execute_Interact(Interactable, this);
     }
 }
