@@ -6,13 +6,13 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 3. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 3.1. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
 - `AOWGameGameMode`: selects the native player pawn and controller.
 - `AOWGamePlayerController`: minimal controller foundation.
-- `AOWGameCharacter`: third-person movement, sprint, prototype visuals, shoulder camera, Enhanced Input, and timer-driven interaction focus.
+- `AOWGameCharacter`: third-person movement, sprint, shoulder camera, Enhanced Input, timer-driven interaction focus, and optional UE Third Person template skeletal visuals with a safe primitive fallback.
 - `IOWInteractable`: reusable interaction contract.
 - `AOWTestInteractable`: Milestone 1 validation actor.
 - `AOWPrototypeVehicle`: Milestone 2 enterable prototype pawn with vehicle input, camera, possession transfer, and an M3 contextual prompt.

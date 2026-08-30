@@ -2,14 +2,17 @@
 #include "OWGame.h"
 #include "Interaction/OWInteractable.h"
 
+#include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
@@ -140,6 +143,109 @@ AOWGameCharacter::AOWGameCharacter()
     }
 }
 
+bool AOWGameCharacter::IsUsingTemplateSkeletalCharacter() const
+{
+    const USkeletalMeshComponent* CharacterMesh = GetMesh();
+    return CharacterMesh &&
+        CharacterMesh->GetSkeletalMeshAsset() != nullptr &&
+        CharacterMesh->IsVisible();
+}
+
+void AOWGameCharacter::UsePrototypeVisualFallback()
+{
+    if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+    {
+        CharacterMesh->SetSkeletalMeshAsset(nullptr);
+        CharacterMesh->SetAnimInstanceClass(nullptr);
+        CharacterMesh->SetVisibility(false, true);
+    }
+
+    if (VisualRoot)
+    {
+        VisualRoot->SetVisibility(true, true);
+    }
+}
+
+bool AOWGameCharacter::TryApplyTemplateSkeletalCharacter()
+{
+    struct FTemplateCharacterCandidate
+    {
+        const TCHAR* MeshPath;
+        const TCHAR* AnimClassPath;
+        const TCHAR* Label;
+    };
+
+    static const FTemplateCharacterCandidate Candidates[] =
+    {
+        {
+            TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
+            TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+            TEXT("Manny Simple / Unarmed")
+        },
+        {
+            TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
+            TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+            TEXT("Quinn Simple / Unarmed")
+        },
+        {
+            TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
+            TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"),
+            TEXT("Manny")
+        },
+        {
+            TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
+            TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C"),
+            TEXT("Quinn")
+        }
+    };
+
+    USkeletalMeshComponent* CharacterMesh = GetMesh();
+    if (!CharacterMesh)
+    {
+        UsePrototypeVisualFallback();
+        return false;
+    }
+
+    for (const FTemplateCharacterCandidate& Candidate : Candidates)
+    {
+        USkeletalMesh* SkeletalMesh = LoadObject<USkeletalMesh>(nullptr, Candidate.MeshPath);
+        UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, Candidate.AnimClassPath);
+        if (!SkeletalMesh || !AnimClass)
+        {
+            continue;
+        }
+
+        CharacterMesh->SetSkeletalMeshAsset(SkeletalMesh);
+        CharacterMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -96.0f));
+        CharacterMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+        CharacterMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        CharacterMesh->SetGenerateOverlapEvents(false);
+        CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+        CharacterMesh->SetAnimInstanceClass(AnimClass);
+        CharacterMesh->SetVisibility(true, true);
+
+        if (VisualRoot)
+        {
+            VisualRoot->SetVisibility(false, true);
+        }
+
+        UE_LOG(
+            LogOWGame,
+            Log,
+            TEXT("Using UE Third Person template character %s on %s."),
+            Candidate.Label,
+            *GetName());
+        return true;
+    }
+
+    UsePrototypeVisualFallback();
+    UE_LOG(
+        LogOWGame,
+        Warning,
+        TEXT("UE Third Person mannequin assets are not installed. Using M3 prototype visuals."));
+    return false;
+}
+
 void AOWGameCharacter::ActivateOnFootInput()
 {
     ResolveInputAssets();
@@ -157,6 +263,7 @@ void AOWGameCharacter::BeginPlay()
     Super::BeginPlay();
 
     CameraBoom->TargetArmLength = CameraDistance;
+    TryApplyTemplateSkeletalCharacter();
     ActivateOnFootInput();
 
     GetWorldTimerManager().SetTimer(

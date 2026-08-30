@@ -14,6 +14,10 @@ One vehicle, possession/enter/exit, driving input, camera integration, and measu
 
 Visible third-person prototype body, sprint, camera feel, contextual interaction prompt, forgiving interaction targeting, and M1/M2 continuity.
 
+### M3.1 — Skeletal character visual upgrade
+
+Free UE Third Person mannequin, Animation Blueprint locomotion, and regression validation. This is a polish checkpoint and does not replace M4.
+
 ## M4 — NPC / population prototype
 
 Small pedestrian population with simulation-LOD experiments and profiling.
