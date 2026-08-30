@@ -1,5 +1,5 @@
-#include "Interaction/OWTestInteractable.h"
-#include "OWGame.h"
+#include "OWTestInteractable.h"
+#include "../OWGame.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 
