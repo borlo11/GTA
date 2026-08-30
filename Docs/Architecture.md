@@ -6,7 +6,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 5. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 6. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
@@ -22,6 +22,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 - `UOWWantedComponent`: Milestone 5 player-specific wanted state, last-known location, crime escalation, police observation, and timer-driven de-escalation.
 - `AOWPoliceDirector`: Milestone 5 world response owner that scales a small police response from wanted level.
 - `AOWPoliceOfficer`: Milestone 5 mannequin pursuit/search actor using direct CharacterMovement steering for the prototype.
+- `UOWHealthComponent`: Milestone 6 reusable health/damage/death component shared by player, ambient NPCs, and police.
 
 No custom GameState or PlayerState is created yet. M5 wanted state is intentionally player-specific and persists across pawn possession by living on AOWGamePlayerController.
 
@@ -72,6 +73,18 @@ Milestone 5 introduces the first reactive-world loop without introducing combat.
 De-escalation is owned by the wanted component: sustained lack of police observation lowers the level one step at a time. At zero wanted, the response is removed.
 
 The M5 police prototype deliberately avoids NavMesh, AIController behavior trees, police vehicles, combat, arrests, and witness simulation.
+
+## Combat
+
+Milestone 6 adds a deliberately small on-foot combat foundation.
+
+`AOWGameCharacter` owns the attack input and camera-directed target query. Ranged targeting resolves blocking world geometry first, then sweeps for pawn objects up to that obstruction. Melee uses the same pawn-targeting path over a much shorter segment.
+
+Health is not embedded into character subclasses. `UOWHealthComponent` owns health, damage, normalized health, and death events. Player, ambient NPC, and police classes attach the same component. NPC/police death handlers stop simulation and schedule short delayed cleanup; their owning managers remove dead members immediately from active counts.
+
+Combat reports into the existing M5 crime system rather than creating a second alert model. A firearm discharge is a crime, and attacks against police escalate wanted more strongly.
+
+M6 deliberately does not add weapon inventory, ammunition, polished weapon animations, hostile police fire, projectiles, cover, ragdolls, or respawn.
 
 ## Deferred large-world technology
 
