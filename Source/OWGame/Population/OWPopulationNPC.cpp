@@ -22,9 +22,10 @@ AOWPopulationNPC::AOWPopulationNPC()
 
     UCharacterMovementComponent* Movement = GetCharacterMovement();
     Movement->bOrientRotationToMovement = false;
+    Movement->bRunPhysicsWithNoController = true;
     Movement->MaxWalkSpeed = WalkSpeed;
-    Movement->BrakingDecelerationWalking = 96.0f;
-    Movement->GroundFriction = 2.0f;
+    Movement->BrakingDecelerationWalking = 0.0f;
+    Movement->GroundFriction = 0.0f;
 }
 
 void AOWPopulationNPC::BeginPlay()
@@ -40,6 +41,12 @@ void AOWPopulationNPC::BeginPlay()
     }
 
     ApplyTemplateVisuals();
+
+    if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+    {
+        Movement->SetMovementMode(MOVE_Walking);
+    }
+
     PickNewDestination();
     ScheduleSimulationTimer();
 }
