@@ -70,6 +70,10 @@ M5 is code-only on top of the M4.5 city. Press `F` in non-shipping builds to rep
 
 M6 is code-only and requires no new binary input assets. While Manny is possessed, Left Mouse fires the prototype hitscan attack and Q performs melee. The reusable `UOWHealthComponent` is attached to player, population NPCs, and police. Combat reports into M5 wanted state. See `Docs/Milestone6.md`.
 
+## Milestone 7 mission framework
+
+M7 is code-only and requires no new binary assets. The persistent mission component lives on `AOWGamePlayerController`. In development builds, `R` starts/restarts Hot Run and `T` clears the mission save slot. Progress is stored through `UOWMissionSaveGame`. See `Docs/Milestone7.md`.
+
 ## Input assets
 
 On-foot baseline:
@@ -100,6 +104,7 @@ With UE installed, run Unreal Automation tests matching:
 - `OWGame.Population.*`
 - `OWGame.CrimePolice.*`
 - `OWGame.Combat.*`
+- `OWGame.Mission.*`
 
 If UE is unavailable, report tests as **NOT EXECUTED**.
 

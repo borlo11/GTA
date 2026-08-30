@@ -2,6 +2,7 @@
 
 #include "OWGame.h"
 #include "Crime/OWWantedComponent.h"
+#include "Mission/OWMissionComponent.h"
 
 #include "Components/InputComponent.h"
 #include "GameFramework/Pawn.h"
@@ -14,6 +15,7 @@ AOWGamePlayerController::AOWGamePlayerController()
     bEnableMouseOverEvents = false;
 
     WantedComponent = CreateDefaultSubobject<UOWWantedComponent>(TEXT("WantedComponent"));
+    MissionComponent = CreateDefaultSubobject<UOWMissionComponent>(TEXT("MissionComponent"));
 }
 
 void AOWGamePlayerController::BeginPlay()
@@ -40,6 +42,18 @@ void AOWGamePlayerController::SetupInputComponent()
             IE_Pressed,
             this,
             &AOWGamePlayerController::DebugReportCrime);
+
+        InputComponent->BindKey(
+            EKeys::R,
+            IE_Pressed,
+            this,
+            &AOWGamePlayerController::DebugStartMission);
+
+        InputComponent->BindKey(
+            EKeys::T,
+            IE_Pressed,
+            this,
+            &AOWGamePlayerController::DebugResetMission);
     }
 #endif
 }
@@ -63,6 +77,22 @@ void AOWGamePlayerController::DebugReportCrime()
         Log,
         TEXT("Prototype crime trigger pressed. Wanted=%d."),
         WantedComponent ? WantedComponent->GetWantedLevel() : 0);
+}
+
+void AOWGamePlayerController::DebugStartMission()
+{
+    if (MissionComponent)
+    {
+        MissionComponent->StartPrototypeMission();
+    }
+}
+
+void AOWGamePlayerController::DebugResetMission()
+{
+    if (MissionComponent)
+    {
+        MissionComponent->ResetMission(true);
+    }
 }
 
 void AOWGamePlayerController::ApplyGameplayInputMode()

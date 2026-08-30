@@ -36,7 +36,7 @@ Reusable health/damage architecture, camera-directed ranged combat, short-range 
 
 ## M7 — Mission framework
 
-Data-driven mission state, objectives, triggers, save integration, and debugging tools.
+Persistent mission state, reusable objective types, runtime markers, SaveGame integration, debug controls, HUD feedback, and one playable Hot Run mission.
 
 ## M8 — Small open-world vertical slice
 

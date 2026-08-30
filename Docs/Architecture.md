@@ -6,7 +6,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 6. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 7. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
@@ -23,8 +23,11 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 - `AOWPoliceDirector`: Milestone 5 world response owner that scales a small police response from wanted level.
 - `AOWPoliceOfficer`: Milestone 5 mannequin pursuit/search actor using direct CharacterMovement steering for the prototype.
 - `UOWHealthComponent`: Milestone 6 reusable health/damage/death component shared by player, ambient NPCs, and police.
+- `UOWMissionComponent`: Milestone 7 persistent mission state/objective owner on the player controller.
+- `AOWMissionMarker`: Milestone 7 lightweight runtime objective marker with no Actor Tick.
+- `UOWMissionSaveGame`: Milestone 7 SaveGame payload for mission id/state/objective persistence.
 
-No custom GameState or PlayerState is created yet. M5 wanted state is intentionally player-specific and persists across pawn possession by living on AOWGamePlayerController.
+No custom GameState or PlayerState is created yet. M5 wanted state and M7 mission state are intentionally player-specific and persist across pawn possession by living on AOWGamePlayerController.
 
 Milestone 4 population ownership lives in a world actor spawned by the authoritative GameMode. It is intentionally not a global singleton.
 
@@ -85,6 +88,18 @@ Health is not embedded into character subclasses. `UOWHealthComponent` owns heal
 Combat reports into the existing M5 crime system rather than creating a second alert model. A firearm discharge is a crime, and attacks against police escalate wanted more strongly.
 
 M6 deliberately does not add weapon inventory, ammunition, polished weapon animations, hostile police fire, projectiles, cover, ragdolls, or respawn.
+
+## Missions
+
+Milestone 7 adds mission orchestration without coupling vehicle, police, or combat classes to authored mission flow.
+
+`UOWMissionComponent` is owned by `AOWGamePlayerController`, so objective state survives possession changes. Objective evaluation runs on a 0.2 second timer. The first mission uses ReachVehicle, EnterVehicle, ReachLocation, and LoseWanted objective types.
+
+`AOWMissionMarker` is spawned only for objectives with a world location and has no Actor Tick. Distance shown in the HUD is cached by the mission timer rather than scanning world actors every frame.
+
+`UOWMissionSaveGame` persists mission id, mission state, and objective index. M7 deliberately saves mission progress only; full world-state checkpointing remains deferred.
+
+The first authored prototype, Hot Run, composes existing M2 vehicle and M5 wanted/police systems instead of embedding mission-specific branches inside them.
 
 ## Deferred large-world technology
 
