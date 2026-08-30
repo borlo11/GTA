@@ -4,7 +4,7 @@
 
 - Unreal Engine 5.8
 - Windows PC initial target
-- Visual Studio 2022 with the Unreal-supported C++ toolchain
+- Visual Studio 2026 or another UE 5.8-supported C++ toolchain
 
 ## Opening the project
 
@@ -16,11 +16,40 @@
 
 Cloud background agents are not expected to have Unreal Engine installed. They must not stall trying to install it.
 
+## One-command Milestone 1 editor bootstrap
+
+The project enables Unreal's Python Editor Script Plugin.
+
+After the C++ module is built and the test map is open, run this from the Unreal Output Log while it is in Cmd mode:
+
+```text
+py "C:\Users\MyPC\Documents\OWGame\Content\Python\bootstrap_m1.py"
+```
+
+Adjust the path only if the repository is cloned elsewhere.
+
+The script is idempotent and will create or repair:
+
+- `IA_Move` as Axis2D
+- `IA_Look` as Axis2D
+- `IA_Jump` as Boolean
+- `IA_Interact` as Boolean
+- `IMC_Default`
+- WASD movement mappings
+- Mouse X/Y look mappings
+- Space jump
+- E interact
+- a small deterministic M1 test platform
+- an M1 PlayerStart
+- one visible `AOWTestInteractable` cube
+
+The native `AOWGameCharacter` resolves these input assets from `/Game/Input` automatically, so a Blueprint character is not required for Milestone 1.
+
 ## Enhanced Input asset setup
 
-The repository intentionally does not fabricate binary `.uasset` files.
+Binary `.uasset` files are generated through the real Unreal Editor rather than fabricated in source control.
 
-In the editor create:
+Expected assets:
 
 - `IA_Move`: Axis2D
 - `IA_Look`: Axis2D
@@ -28,18 +57,16 @@ In the editor create:
 - `IA_Interact`: Boolean
 - `IMC_Default`: Input Mapping Context
 
-Suggested baseline mappings:
+Baseline mappings:
 
 - W/S/A/D -> Move
-- Mouse XY -> Look
+- Mouse X/Y -> Look
 - Space -> Jump
 - E -> Interact
 
-Create a Blueprint child of `AOWGameCharacter` only if needed to assign the four actions and mapping context, then configure that pawn in a derived GameMode or set the native defaults appropriately. Do not add unrelated gameplay logic to the Blueprint.
-
 ## Test interactable
 
-Place `AOWTestInteractable` in a test map and give its Mesh component any safe local primitive/static mesh if visual feedback is desired. Interaction logs through `LogOWGame`.
+The bootstrap script places one `AOWTestInteractable` using the engine cube mesh. Interaction logs through `LogOWGame`.
 
 ## Tests
 
