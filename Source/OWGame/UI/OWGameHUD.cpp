@@ -1,4 +1,4 @@
-#include "UI/OWGameHUD.h"
+#include "OWGameHUD.h"
 
 #include "../OWGameCharacter.h"
 
