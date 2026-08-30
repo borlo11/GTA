@@ -34,7 +34,8 @@ void AOWPopulationNPC::BeginPlay()
     if (!bPopulationInitialized)
     {
         HomeLocation = GetActorLocation();
-        RandomStream.Initialize(GetUniqueID());
+        VisualVariantSeed = static_cast<int32>(GetUniqueID());
+        RandomStream.Initialize(VisualVariantSeed);
         bPopulationInitialized = true;
     }
 
@@ -46,6 +47,7 @@ void AOWPopulationNPC::BeginPlay()
 void AOWPopulationNPC::InitializePopulationMember(int32 Seed, const FVector& InHomeLocation)
 {
     HomeLocation = InHomeLocation;
+    VisualVariantSeed = Seed;
     RandomStream.Initialize(Seed);
     bPopulationInitialized = true;
     bWaitingAtDestination = false;
@@ -73,7 +75,7 @@ void AOWPopulationNPC::ApplyTemplateVisuals()
     };
 
     const FVisualCandidate& Candidate =
-        (RandomStream.GetInitialSeed() & 1) == 0 ? MannyCandidate : QuinnCandidate;
+        (VisualVariantSeed & 1) == 0 ? MannyCandidate : QuinnCandidate;
 
     USkeletalMesh* SkeletalMesh = LoadObject<USkeletalMesh>(nullptr, Candidate.MeshPath);
     UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, Candidate.AnimClassPath);
