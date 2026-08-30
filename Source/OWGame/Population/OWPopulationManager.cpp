@@ -1,6 +1,6 @@
-#include "Population/OWPopulationManager.h"
+#include "OWPopulationManager.h"
 
-#include "Population/OWPopulationNPC.h"
+#include "OWPopulationNPC.h"
 
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
