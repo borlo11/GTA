@@ -1,4 +1,4 @@
-#include "Vehicle/OWPrototypeVehicle.h"
+#include "OWPrototypeVehicle.h"
 
 #include "OWGame.h"
 #include "OWGameCharacter.h"
