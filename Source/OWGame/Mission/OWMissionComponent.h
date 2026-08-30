@@ -23,7 +23,7 @@ public:
     void StartPrototypeMission();
 
     UFUNCTION(BlueprintCallable, Category="Mission")
-    void ResetMission(bool bDeleteSave = true);
+    void ResetMission(bool bDeleteSave);
 
     UFUNCTION(BlueprintCallable, Category="Mission")
     void FailMission(const FText& Reason);
@@ -87,7 +87,7 @@ protected:
     float ObjectiveUpdateInterval = 0.2f;
 
     UPROPERTY(EditDefaultsOnly, Category="Mission")
-    FName MissionId = TEXT("HotRun");
+    FName MissionId = FName(TEXT("HotRun"));
 
     UPROPERTY(EditDefaultsOnly, Category="Mission")
     FString SaveSlotName = TEXT("OWGame_MissionState_0");
