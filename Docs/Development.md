@@ -50,6 +50,10 @@ Then run the same command with `Content\Python\validate_m2.py`. Required marker:
 
 Milestone 3 is code-only and does not require new binary assets. It adds the visible prototype character body, sprint, camera polish, timer-driven interaction focus, and contextual HUD. See `Docs/Milestone3.md`.
 
+## Milestone 3.1 skeletal character upgrade
+
+M3.1 uses the free Unreal Engine Third Person template mannequin content. Add the Third Person feature/content pack from the Content Browser, then run `Content/Python/validate_m3_1_character.py`. See `Docs/Milestone3_1.md`.
+
 ## Input assets
 
 On-foot baseline:
