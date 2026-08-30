@@ -40,6 +40,6 @@ Persistent mission state, reusable objective types, runtime markers, SaveGame in
 
 ## M8 — Small open-world vertical slice
 
-A compact original district combining validated systems, one polished mission, streaming/world-partition experiments, and a stable performance target.
+A compact original district combining M1-M7, an in-world Hot Run entry point, polished mission feedback, a 60 FPS debug budget overlay, and a non-destructive World Partition/streaming inspection.
 
 Expansion beyond M8 is intentionally undefined until the vertical slice is evaluated.
