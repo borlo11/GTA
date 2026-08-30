@@ -9,10 +9,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/FloatingPawnMovement.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -22,7 +23,7 @@ namespace
 {
 UEnhancedInputLocalPlayerSubsystem* GetEnhancedInputSubsystem(AController* Controller)
 {
-    const APlayerController* PlayerController = Cast<APlayerController>(Controller);
+    APlayerController* PlayerController = Cast<APlayerController>(Controller);
     if (!PlayerController)
     {
         return nullptr;
@@ -49,7 +50,7 @@ AOWPrototypeVehicle::AOWPrototypeVehicle()
     }
 
     VehicleMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("VehicleMovement"));
-    VehicleMovement->UpdatedComponent = VehicleMesh;
+    VehicleMovement->SetUpdatedComponent(VehicleMesh);
     VehicleMovement->MaxSpeed = 1800.0f;
     VehicleMovement->Acceleration = 4000.0f;
     VehicleMovement->Deceleration = 6000.0f;
@@ -145,7 +146,7 @@ void AOWPrototypeVehicle::PossessedBy(AController* NewController)
 
 void AOWPrototypeVehicle::UnPossessed()
 {
-    AController* PreviousController = Controller;
+    AController* PreviousController = GetController();
     RemoveVehicleMappingContext(PreviousController);
     RestoreDriverCharacter();
     Super::UnPossessed();
@@ -159,14 +160,14 @@ UPawnMovementComponent* AOWPrototypeVehicle::GetMovementComponent() const
 bool AOWPrototypeVehicle::CanInteract_Implementation(AActor* Interactor) const
 {
     const AOWGameCharacter* Character = Cast<AOWGameCharacter>(Interactor);
-    return !IsValid(DriverCharacter) && IsValid(Character) && IsValid(Character->GetController());
+    return !IsOccupied() && IsValid(Character) && IsValid(Character->GetController());
 }
 
 void AOWPrototypeVehicle::Interact_Implementation(AActor* Interactor)
 {
     AOWGameCharacter* Character = Cast<AOWGameCharacter>(Interactor);
     APlayerController* PlayerController = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
-    if (!Character || !PlayerController || IsValid(DriverCharacter))
+    if (!Character || !PlayerController || IsOccupied())
     {
         return;
     }
@@ -184,6 +185,11 @@ void AOWPrototypeVehicle::Interact_Implementation(AActor* Interactor)
     PlayerController->Possess(this);
 
     UE_LOG(LogOWGame, Log, TEXT("%s entered vehicle %s."), *Character->GetName(), *GetName());
+}
+
+bool AOWPrototypeVehicle::IsOccupied() const
+{
+    return IsValid(DriverCharacter);
 }
 
 float AOWPrototypeVehicle::GetConfiguredMaxSpeed() const
@@ -206,7 +212,10 @@ void AOWPrototypeVehicle::Steer(const FInputActionValue& Value)
 
     const float SteeringValue = FMath::Clamp(Value.Get<float>(), -1.0f, 1.0f);
     const float ForwardSpeed = FVector::DotProduct(VehicleMovement->Velocity, GetActorForwardVector());
-    const float SpeedAlpha = FMath::Clamp(FMath::Abs(ForwardSpeed) / FMath::Max(VehicleMovement->MaxSpeed, 1.0f), 0.0f, 1.0f);
+    const float SpeedAlpha = FMath::Clamp(
+        FMath::Abs(ForwardSpeed) / FMath::Max(VehicleMovement->MaxSpeed, 1.0f),
+        0.0f,
+        1.0f);
 
     if (SpeedAlpha <= KINDA_SMALL_NUMBER)
     {
@@ -214,7 +223,13 @@ void AOWPrototypeVehicle::Steer(const FInputActionValue& Value)
     }
 
     const float TravelDirection = ForwardSpeed >= 0.0f ? 1.0f : -1.0f;
-    const float DeltaYaw = SteeringValue * TravelDirection * SteeringRateDegreesPerSecond * SpeedAlpha * GetWorld()->GetDeltaSeconds();
+    const float DeltaYaw =
+        SteeringValue *
+        TravelDirection *
+        SteeringRateDegreesPerSecond *
+        SpeedAlpha *
+        GetWorld()->GetDeltaSeconds();
+
     AddActorLocalRotation(FRotator(0.0f, DeltaYaw, 0.0f));
 }
 
@@ -235,7 +250,7 @@ void AOWPrototypeVehicle::Brake()
 
 void AOWPrototypeVehicle::ExitVehicle()
 {
-    APlayerController* PlayerController = Cast<APlayerController>(Controller);
+    APlayerController* PlayerController = Cast<APlayerController>(GetController());
     AOWGameCharacter* Character = DriverCharacter;
 
     if (!PlayerController || !IsValid(Character))
@@ -247,7 +262,12 @@ void AOWPrototypeVehicle::ExitVehicle()
 
     DriverCharacter = nullptr;
     const FVector ExitLocation = GetActorTransform().TransformPosition(ExitOffset);
-    Character->SetActorLocationAndRotation(ExitLocation, FRotator(0.0f, GetActorRotation().Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+    Character->SetActorLocationAndRotation(
+        ExitLocation,
+        FRotator(0.0f, GetActorRotation().Yaw, 0.0f),
+        false,
+        nullptr,
+        ETeleportType::TeleportPhysics);
     Character->SetActorHiddenInGame(false);
     Character->SetActorEnableCollision(true);
 
@@ -289,7 +309,7 @@ void AOWPrototypeVehicle::RemoveVehicleMappingContext(AController* InController)
 
 void AOWPrototypeVehicle::RestoreDriverCharacter()
 {
-    if (!IsValid(DriverCharacter))
+    if (!IsOccupied())
     {
         DriverCharacter = nullptr;
         return;
@@ -299,7 +319,12 @@ void AOWPrototypeVehicle::RestoreDriverCharacter()
     DriverCharacter = nullptr;
 
     const FVector ExitLocation = GetActorTransform().TransformPosition(ExitOffset);
-    Character->SetActorLocationAndRotation(ExitLocation, FRotator(0.0f, GetActorRotation().Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+    Character->SetActorLocationAndRotation(
+        ExitLocation,
+        FRotator(0.0f, GetActorRotation().Yaw, 0.0f),
+        false,
+        nullptr,
+        ETeleportType::TeleportPhysics);
     Character->SetActorHiddenInGame(false);
     Character->SetActorEnableCollision(true);
 
