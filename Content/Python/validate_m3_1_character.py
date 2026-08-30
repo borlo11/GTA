@@ -6,6 +6,16 @@ import unreal
 
 CANDIDATES = [
     (
+        "Manny Simple",
+        "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple",
+        "/Game/Characters/Mannequins/Anims/ABP_Manny",
+    ),
+    (
+        "Quinn Simple",
+        "/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple",
+        "/Game/Characters/Mannequins/Anims/ABP_Quinn",
+    ),
+    (
         "Manny",
         "/Game/Characters/Mannequins/Meshes/SKM_Manny",
         "/Game/Characters/Mannequins/Animations/ABP_Manny",
