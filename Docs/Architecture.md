@@ -6,16 +6,17 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 2. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 3. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
 - `AOWGameGameMode`: selects the native player pawn and controller.
 - `AOWGamePlayerController`: minimal controller foundation.
-- `AOWGameCharacter`: third-person movement, camera, Enhanced Input binding hooks, and interaction trace.
+- `AOWGameCharacter`: third-person movement, sprint, prototype visuals, shoulder camera, Enhanced Input, and timer-driven interaction focus.
 - `IOWInteractable`: reusable interaction contract.
 - `AOWTestInteractable`: Milestone 1 validation actor.
-- `AOWPrototypeVehicle`: Milestone 2 enterable prototype pawn with vehicle input, camera, and possession transfer.
+- `AOWPrototypeVehicle`: Milestone 2 enterable prototype pawn with vehicle input, camera, possession transfer, and an M3 contextual prompt.
+- `AOWGameHUD`: Milestone 3 lightweight contextual interaction HUD.
 
 No GameState or PlayerState is created yet because the current milestones have no persistent match/player state that requires them.
 
@@ -27,9 +28,9 @@ Milestone 2 adds `IMC_Vehicle` for throttle, steer, brake, exit, and vehicle cam
 
 ## Interaction
 
-The character performs an interaction trace only when the Interact action fires. It does not continuously scan every frame. Hit actors opt in through `IOWInteractable`.
+Milestone 3 extends the interaction contract with contextual prompt text. The character uses a low-frequency timer and a camera-forward sphere sweep to identify an interactable without enabling Actor Tick. Pressing Interact performs the same query immediately before dispatching the interface call.
 
-The M2 vehicle implements the same interface, so entering a vehicle does not add vehicle-specific branching to `AOWGameCharacter`.
+The M2 vehicle implements the same interface, so entering a vehicle does not add vehicle-specific branching to `AOWGameCharacter`. The HUD simply reads the current prompt from the possessed on-foot character.
 
 ## Vehicle ownership
 
@@ -53,7 +54,7 @@ Mass, GAS, PCG-heavy generation, custom streaming layers, and bespoke ECS archit
 
 ## Performance philosophy
 
-The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the character, test interactable, and prototype vehicle. Unreal movement components may tick as required for movement simulation.
+The project targets 60 FPS (16.67 ms). Custom Actor Tick is disabled on the character, test interactable, and prototype vehicle. Unreal movement components and HUD drawing run through their normal engine lifecycles. M3 interaction focus uses a low-frequency timer rather than a per-frame actor search.
 
 Optimization should be profiling-led, while obvious scalability traps are rejected early.
 
