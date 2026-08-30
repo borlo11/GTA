@@ -1,4 +1,4 @@
-#include "Population/OWPopulationNPC.h"
+#include "OWPopulationNPC.h"
 
 #include "../OWGame.h"
 
