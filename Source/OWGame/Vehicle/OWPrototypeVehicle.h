@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "Interaction/OWInteractable.h"
+#include "../Interaction/OWInteractable.h"
 #include "OWPrototypeVehicle.generated.h"
 
 class AOWGameCharacter;
