@@ -24,6 +24,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Mission")
     UOWMissionComponent* GetMissionComponent() const { return MissionComponent; }
 
+    UFUNCTION(BlueprintPure, Category="Debug")
+    bool IsPerformanceOverlayVisible() const { return bShowPerformanceOverlay; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void OnPossess(APawn* InPawn) override;
@@ -34,10 +37,14 @@ private:
     void DebugReportCrime();
     void DebugStartMission();
     void DebugResetMission();
+    void TogglePerformanceOverlay();
 
     UPROPERTY(VisibleAnywhere, Category="Crime")
     TObjectPtr<UOWWantedComponent> WantedComponent;
 
     UPROPERTY(VisibleAnywhere, Category="Mission")
     TObjectPtr<UOWMissionComponent> MissionComponent;
+
+    UPROPERTY(Transient)
+    bool bShowPerformanceOverlay = false;
 };
