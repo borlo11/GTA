@@ -1,7 +1,7 @@
 #include "OWPrototypeVehicle.h"
 
-#include "OWGame.h"
-#include "OWGameCharacter.h"
+#include "../OWGame.h"
+#include "../OWGameCharacter.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
