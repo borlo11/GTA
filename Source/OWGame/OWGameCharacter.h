@@ -31,6 +31,7 @@ protected:
     void StopJump();
     void TryInteract();
     void ResolveInputAssets();
+    void ApplyDefaultMappingContext();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<USpringArmComponent> CameraBoom;
