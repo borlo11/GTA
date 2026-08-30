@@ -22,6 +22,10 @@ Free UE Third Person mannequin, Animation Blueprint locomotion, and regression v
 
 Small autonomous mannequin pedestrian population with runtime spawn/despawn, distance-based simulation LOD, and profiling discipline.
 
+### M4.5 — Lightweight original city
+
+Generated original urban district using UNIBLOCKS FREE plus lightweight road/sidewalk geometry, with OWGame gameplay systems validated inside it.
+
 ## M5 — Crime / police prototype
 
 Minimal crime reporting, response, pursuit, search, and de-escalation loop.
