@@ -16,8 +16,9 @@ The objective is not to make a final photorealistic city in one step. It is to r
 - lane dashes,
 - crosswalks,
 - parking-bay markings,
-- varied podium/tower/setback building silhouettes,
-- façade rhythm strips and roof caps,
+- authored UNIBLOCKS FREE building LevelInstances instead of stretched block meshes,
+- four real prefab variants: Art House Elevated, Classic House, Futuristic Cabin, and Modern House 2,
+- rotated/offset 1:1 prefab placement for repeat variation,
 - plaza / open-space blocks,
 - bollards and simple urban furniture,
 - street-light poles, heads and low-cost point lights,
@@ -41,6 +42,8 @@ M9 moves the project toward a fully dynamic city-lighting workflow.
 - ambient occlusion.
 
 The M9 bootstrap also attempts to enable `ForceNoPrecomputedLighting` on the city WorldSettings. The intention is to remove the old "lighting must be rebuilt" workflow and warning rather than hiding it.
+
+The authored architecture is loaded through `ALevelInstance` / `unreal.LevelInstance` from the UNIBLOCKS prefab World assets discovered locally. The generator does not redistribute those Fab assets; it references the user's installed pack.
 
 ## Default startup map
 
@@ -99,8 +102,9 @@ Then run all existing `OWGame.*` automation tests.
 2. The old single-cross blockout has been replaced by a denser grid.
 3. Road markings and crosswalks are clearly visible.
 4. Building silhouettes have visible height/setback variation.
-5. Street furniture / lights reduce empty pavement areas.
-6. The red baked-lighting warning is gone after the rebuilt map is saved/reloaded.
+5. Buildings visibly use authored prefab architecture with windows/doors/forms from the installed pack rather than monolithic cubes.
+6. Street furniture / lights reduce empty pavement areas.
+7. The red baked-lighting warning is gone after the rebuilt map is saved/reloaded.
 7. Manny, ambient NPCs and police still spawn correctly.
 8. The prototype vehicle still enters/exits and drives through the road network.
 9. Hot Run remains fully completable.
