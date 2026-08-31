@@ -91,22 +91,32 @@ def main():
         "wrong GameMode: {}".format(game_mode),
     )
 
-    background_buildings = [
-        label
-        for label in labels
-        if label.startswith(PREFIX + "Building_") and label.endswith("_Background")
+    # Classify lightweight background buildings structurally instead of relying
+    # on an exact ActorLabel suffix. Unreal can append/normalize labels during
+    # repeated editor-generation passes, while the actor type remains stable.
+    prefab_actor_ids = {id(actor) for actor in prefab_instances}
+
+    background_building_actors = [
+        actor
+        for actor in actors
+        if actor.get_actor_label().startswith(PREFIX + "Building_")
+        and id(actor) not in prefab_actor_ids
     ]
 
     require(
-        len(background_buildings) >= 8,
-        "expected eight lightweight background building masses: {}".format(
-            len(background_buildings)
+        len(background_building_actors) >= 8,
+        "expected at least eight lightweight background building masses: {}".format(
+            len(background_building_actors)
         ),
     )
 
     unreal.log("VALIDATE_M9: HERO_PREFABS={}".format(len(prefab_instances)))
     unreal.log("VALIDATE_M9: PREFAB_VARIANTS={}".format(len(world_assets)))
-    unreal.log("VALIDATE_M9: BACKGROUND_MASSES={}".format(len(background_buildings)))
+    unreal.log(
+        "VALIDATE_M9: BACKGROUND_MASSES={}".format(
+            len(background_building_actors)
+        )
+    )
     unreal.log("VALIDATE_M9: ROAD_MARKS={}".format(len(road_marks)))
     unreal.log("VALIDATE_M9: CROSSWALKS={}".format(len(crosswalks)))
     unreal.log("VALIDATE_M9: ALL CHECKS PASSED")
