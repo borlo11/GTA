@@ -400,41 +400,22 @@ def mesh_dimensions(mesh):
 
 
 def spawn_background_building(name, x, y, sx, sy, sz, material):
-    mesh = find_asset(UNIBLOCKS_ROOT, UNIBLOCKS_BACKGROUND_MESH)
-    if not mesh:
-        return None
-
-    dimensions, minimum, maximum = mesh_dimensions(mesh)
-    scale = unreal.Vector(
-        sx / dimensions.x,
-        sy / dimensions.y,
-        sz / dimensions.z,
+    # Background architecture must never silently disappear if a Fab registry
+    # lookup is unavailable in commandlet mode. Use the guaranteed engine Cube
+    # as the cheap silhouette carrier and keep the UNIBLOCKS material.
+    #
+    # These actors are intentionally simple and distant; authored UNIBLOCKS
+    # LevelInstances remain the foreground/hero architecture.
+    actor = cube(
+        name,
+        unreal.Vector(x, y, LOT_HEIGHT + sz * 0.5),
+        unreal.Vector(sx, sy, sz),
+        material,
+        True,
+        False,
     )
 
-    local_center_x = (minimum.x + maximum.x) * 0.5
-    local_center_y = (minimum.y + maximum.y) * 0.5
-
-    location = unreal.Vector(
-        x - local_center_x * scale.x,
-        y - local_center_y * scale.y,
-        LOT_HEIGHT - minimum.z * scale.z,
-    )
-
-    actor = actor_subsystem().spawn_actor_from_class(
-        unreal.StaticMeshActor,
-        location,
-        unreal.Rotator(pitch=0.0, yaw=0.0, roll=0.0),
-    )
-    set_label(actor, name)
     set_tags(actor, "OWNoPopulationSpawn")
-
-    component = actor.static_mesh_component
-    component.set_mobility(unreal.ComponentMobility.STATIC)
-    component.set_static_mesh(mesh)
-    if material:
-        component.set_material(0, material)
-
-    actor.set_actor_scale3d(scale)
     return actor
 
 
@@ -487,7 +468,7 @@ def build_prefab_district(mats):
             width_x = 1180.0 + (background_index % 2) * 140.0
             width_y = 1120.0 + ((background_index + 1) % 2) * 160.0
 
-            spawn_background_building(
+            background_actor = spawn_background_building(
                 PREFIX + "Building_{:02d}_Background".format(background_index + 1),
                 x,
                 y,
@@ -496,6 +477,14 @@ def build_prefab_district(mats):
                 height,
                 material,
             )
+
+            if not background_actor:
+                raise RuntimeError(
+                    "M9: failed to create background building {}".format(
+                        background_index + 1
+                    )
+                )
+
             background_index += 1
 
     log(
