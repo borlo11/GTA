@@ -114,7 +114,7 @@ def clear_generated():
 
 
 def configure_world():
-    world = unreal.EditorLevelLibrary.get_editor_world()
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     settings = world.get_world_settings() if world else None
     if not settings:
         raise RuntimeError("M9: WorldSettings unavailable")
