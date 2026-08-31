@@ -555,19 +555,19 @@ def add_street_furniture(mats):
 
 
 def optimize_prefab_runtime_cost():
-    # The UNIBLOCKS prefab Worlds are showcase assets containing many Blueprint
-    # actors, door logic, decorative lights and component ticks. Repeating them
-    # verbatim is too expensive for the current open-world target.
+    # Commandlet-safe optimization pass.
     #
-    # M9 is a daytime slice: local prefab lights are disabled completely and
-    # actors/components inside non-persistent LevelInstance levels are frozen.
-    world = unreal.get_editor_subsystem(
-        unreal.UnrealEditorSubsystem
-    ).get_editor_world()
-
-    persistent_level = world.get_editor_property("persistent_level") if world else None
-
+    # Do not depend on World.persistent_level: that property is not exposed on
+    # UE 5.8's Python World wrapper in commandlet mode.
+    #
+    # Keep the safe, high-value part of the optimization:
+    # - disable decorative local lights from repeated prefab content;
+    # - disable Actor Tick on the LevelInstance container actors themselves.
+    #
+    # The expensive prefab count has already been reduced to four hero instances,
+    # so freezing every nested actor is no longer required for the M9 target.
     local_light_component_classes = []
+
     for class_name in (
         "PointLightComponent",
         "SpotLightComponent",
@@ -578,8 +578,7 @@ def optimize_prefab_runtime_cost():
             local_light_component_classes.append(cls)
 
     disabled_lights = 0
-    frozen_actors = 0
-    frozen_components = 0
+    frozen_level_instances = 0
 
     for actor in actor_subsystem().get_all_level_actors():
         if not actor:
@@ -610,41 +609,29 @@ def optimize_prefab_runtime_cost():
                 except Exception:
                     pass
 
-                disabled_lights += 1
-
-        try:
-            actor_level = actor.get_level()
-        except Exception:
-            actor_level = None
-
-        if persistent_level and actor_level and actor_level != persistent_level:
-            try:
-                actor.set_actor_tick_enabled(False)
-                frozen_actors += 1
-            except Exception:
-                pass
-
-            try:
-                components = actor.get_components_by_class(unreal.ActorComponent)
-            except Exception:
-                components = []
-
-            for component in components:
                 try:
-                    component.set_component_tick_enabled(False)
-                    frozen_components += 1
+                    component.set_editor_property("cast_volumetric_shadow", False)
                 except Exception:
                     pass
 
+                disabled_lights += 1
+
+        if hasattr(unreal, "LevelInstance") and isinstance(actor, unreal.LevelInstance):
+            try:
+                actor.set_actor_tick_enabled(False)
+                frozen_level_instances += 1
+            except Exception:
+                pass
+
     log(
-        "M9: runtime cost optimized lights={} prefab_actors={} prefab_components={}".format(
+        "M9: runtime cost optimized lights={} level_instances={}".format(
             disabled_lights,
-            frozen_actors,
-            frozen_components,
+            frozen_level_instances,
         )
     )
 
 
+def setup_lighting():
 def setup_lighting():
     subsystem = actor_subsystem()
 
