@@ -464,6 +464,58 @@ def add_street_furniture(mats):
         )
 
 
+def optimize_prefab_local_lights():
+    # Authored prefab houses include many decorative local lights intended for
+    # close-up showcase scenes. In a repeated open-world district they can
+    # overlap heavily, trigger the VSM one-pass-projection warning, and push
+    # frame time over the M8 budget. Keep the lights, but make their shadows
+    # non-authoritative; the movable sun remains the primary shadow source.
+    optimized_components = 0
+
+    local_light_component_classes = []
+
+    for class_name in (
+        "PointLightComponent",
+        "SpotLightComponent",
+        "RectLightComponent",
+    ):
+        cls = getattr(unreal, class_name, None)
+        if cls:
+            local_light_component_classes.append(cls)
+
+    for actor in actor_subsystem().get_all_level_actors():
+        if not actor:
+            continue
+
+        for component_class in local_light_component_classes:
+            try:
+                components = actor.get_components_by_class(component_class)
+            except Exception:
+                components = []
+
+            for component in components:
+                if not component:
+                    continue
+
+                try:
+                    component.set_editor_property("cast_shadows", False)
+                except Exception:
+                    pass
+
+                try:
+                    component.set_editor_property("cast_volumetric_shadow", False)
+                except Exception:
+                    pass
+
+                optimized_components += 1
+
+    log(
+        "M9: optimized {} local prefab light components for open-world VSM budget".format(
+            optimized_components
+        )
+    )
+
+
 def setup_lighting():
     subsystem = actor_subsystem()
 
@@ -571,6 +623,7 @@ def main():
     add_road_markings(mats)
     build_prefab_district(mats)
     add_street_furniture(mats)
+    optimize_prefab_local_lights()
     setup_lighting()
     setup_gameplay()
 
