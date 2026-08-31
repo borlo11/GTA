@@ -145,3 +145,35 @@ M11 intentionally does not prioritize:
 - final production weather system.
 
 Those systems come after the free-roam world has a strong foundation.
+
+
+## Phase A result
+
+The first M11 local inventory completed successfully and confirmed a large local environment library:
+
+- 4,138 scanned assets;
+- 9 prefab World assets;
+- 3,202 static-mesh candidates;
+- 29 Blueprint candidates;
+- 311 material candidates.
+
+The inventory also confirmed the four useful authored house/cabin families already known from M9, plus visible garden and gate/fence parts suitable for residential and industrial dressing.
+
+## Phase B — first additive expansion
+
+`bootstrap_m11_freeroam_expansion.py` intentionally preserves the M9 central district and M10 Chaos SportsCar while adding an outer free-roam world under the `OW_M11_` ownership prefix.
+
+The first pass adds:
+
+- a much larger world base;
+- seven north/south and seven east/west long roads;
+- long lane-marking runs and outer crosswalks;
+- four district identities: Residential, Modern, Industrial, ParkEdge;
+- four additional authored hero prefab LevelInstances;
+- lightweight district background architecture;
+- industrial fence/loading-dock dressing;
+- a civic/park plaza with optional UNIBLOCKS bushes;
+- a dedicated parking area;
+- sparse outer street lights.
+
+This is a layout-and-silhouette pass, not the final art pass. Phase C will replace the weakest placeholder/background architecture with better combinations from the local visual inventory after the expanded driving routes are accepted.
