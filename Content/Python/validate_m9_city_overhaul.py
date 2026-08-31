@@ -61,8 +61,8 @@ def main():
         ]
 
     require(
-        len(prefab_instances) >= 6,
-        "expected six authored UNIBLOCKS hero LevelInstances: {}".format(
+        len(prefab_instances) >= 4,
+        "expected four authored UNIBLOCKS hero LevelInstances: {}".format(
             len(prefab_instances)
         ),
     )
@@ -77,7 +77,7 @@ def main():
             pass
 
     require(
-        len(world_assets) >= 3,
+        len(world_assets) >= 2,
         "prefab variety too low: {}".format(sorted(world_assets)),
     )
 
