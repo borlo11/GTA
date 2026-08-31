@@ -426,6 +426,14 @@ def build_hero_prefabs():
 
 
 def build_background_districts(mats):
+    """
+    Phase C massing pass.
+
+    The first M11 layout used one large scaled block per lot. That was cheap
+    but visually read as giant white placeholder cubes. Replace those with
+    smaller clustered masses that sit closer to believable building scale and
+    leave visible setbacks from the roads.
+    """
     mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Block_scalable")
     if not mesh:
         raise RuntimeError("M11: SM_UB_Block_scalable missing")
@@ -439,6 +447,7 @@ def build_background_districts(mats):
     }
 
     count = 0
+
     for x in BLOCK_CENTERS:
         for y in BLOCK_CENTERS:
             if abs(x) < 10000.0 and abs(y) < 10000.0:
@@ -448,69 +457,134 @@ def build_background_districts(mats):
 
             district = district_for(x, y)
 
-            # South-east is intentionally open for park/plaza/parking.
+            # South-east remains open as park / civic / parking space.
             if district == "ParkEdge":
                 continue
 
-            material = backgrounds[count % len(backgrounds)]
+            local = []
 
             if district == "Residential":
-                target = unreal.Vector(
-                    2500.0 + (count % 2) * 500.0,
-                    2100.0,
-                    700.0 + (count % 3) * 180.0,
+                # Three low volumes rather than one slab. The varying offsets
+                # create front/side yards and keep streets from feeling walled-in.
+                local = (
+                    (-2300.0, -1700.0, 2100.0, 1700.0, 620.0, 0.0),
+                    (1700.0, -900.0, 1800.0, 1500.0, 760.0, 90.0),
+                    (300.0, 2100.0, 2200.0, 1500.0, 680.0, 0.0),
                 )
             elif district == "Modern":
-                target = unreal.Vector(
-                    2600.0,
-                    2400.0,
-                    1200.0 + (count % 4) * 260.0,
+                # Slender mid-rise pair + a low podium. Heights stay well below
+                # the old giant placeholder blocks.
+                local = (
+                    (-1900.0, -1100.0, 1800.0, 1700.0, 1450.0, 0.0),
+                    (1800.0, 1200.0, 1700.0, 1850.0, 1750.0, 90.0),
+                    (-300.0, 2350.0, 3000.0, 1050.0, 520.0, 0.0),
                 )
             else:
-                # Industrial: wide, deliberately low warehouses.
-                target = unreal.Vector(
-                    5200.0,
-                    3300.0,
-                    650.0 + (count % 2) * 160.0,
+                # Industrial district: two long low warehouses with a service
+                # gap between them. This gives the car actual streetscape depth.
+                local = (
+                    (-1900.0, -1600.0, 3600.0, 2200.0, 720.0, 0.0),
+                    (2100.0, 1500.0, 3300.0, 2000.0, 820.0, 90.0),
                 )
 
-            actor = spawn_mesh_sized(
-                PREFIX + "{}_Background_{:02d}".format(district, count),
-                mesh,
-                unreal.Vector(x, y, 18.0 + target.z * 0.5),
-                target,
-                material,
-                True,
-                0.0 if count % 2 == 0 else 90.0,
-            )
-            if not actor:
-                raise RuntimeError("M11: failed background actor {}".format(count))
-            count += 1
+            for part_index, (ox, oy, sx, sy, sz, yaw) in enumerate(local):
+                material = backgrounds[(count + part_index) % len(backgrounds)]
 
-    log("M11: lightweight district buildings={}".format(count))
+                actor = spawn_mesh_sized(
+                    PREFIX + "{}_Background_{:03d}".format(district, count),
+                    mesh,
+                    unreal.Vector(
+                        x + ox,
+                        y + oy,
+                        12.0 + sz * 0.5,
+                    ),
+                    unreal.Vector(sx, sy, sz),
+                    material,
+                    True,
+                    yaw,
+                )
+
+                if not actor:
+                    raise RuntimeError(
+                        "M11: failed district background actor {}".format(count)
+                    )
+
+                count += 1
+
+    log("M11: Phase C clustered district buildings={}".format(count))
 
 
-def spawn_optional_visible_mesh(label, asset_name, location, scale, yaw=0.0):
-    mesh = find_asset("/Game/Uniblocks/Meshes", asset_name)
-    if not mesh:
-        warn("M11: optional mesh unavailable: {}".format(asset_name))
-        return None
+def build_phase_c_landscaping(mats):
+    """
+    Lightweight visual dressing using assets confirmed by the local inventory.
+    Bushes are non-colliding and sparse so they improve scale/readability
+    without turning the scene into a foliage benchmark.
+    """
+    bush_mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Bush_x150")
+    if not bush_mesh:
+        warn("M11: Phase C landscaping skipped; SM_UB_Bush_x150 unavailable")
+        return
 
-    actor = actor_subsystem().spawn_actor_from_class(
-        unreal.StaticMeshActor,
-        location,
-        unreal.Rotator(0.0, yaw, 0.0),
-    )
-    if not actor:
-        return None
+    positions = []
 
-    set_label(actor, label)
-    set_tags(actor, "OWNoPopulationSpawn")
-    actor.static_mesh_component.set_static_mesh(mesh)
-    actor.static_mesh_component.set_mobility(unreal.ComponentMobility.STATIC)
-    actor.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.QUERY_AND_PHYSICS)
-    actor.set_actor_scale3d(scale)
-    return actor
+    # Residential front-garden rhythm.
+    for x in (-33000.0, -30000.0, -27000.0, -21000.0, -18000.0, -15000.0):
+        for y in (14500.0, 21500.0, 28500.0, 35500.0):
+            positions.append((x, y, 0.70))
+
+    # Modern district: fewer, more deliberate planted edges.
+    for x, y in (
+        (15000.0, 15500.0), (17500.0, 15500.0), (20500.0, 15500.0),
+        (27500.0, 20500.0), (30500.0, 20500.0), (33500.0, 20500.0),
+        (15500.0, 30500.0), (20500.0, 33500.0), (30500.0, 33500.0),
+    ):
+        positions.append((x, y, 0.62))
+
+    count = 0
+    for x, y, scale in positions:
+        actor = actor_subsystem().spawn_actor_from_class(
+            unreal.StaticMeshActor,
+            unreal.Vector(x, y, 82.0),
+            unreal.Rotator(0.0, float((count * 47) % 360), 0.0),
+        )
+
+        if not actor:
+            continue
+
+        set_label(actor, PREFIX + "Env_Bush_{:03d}".format(count))
+        set_tags(actor, "OWNoPopulationSpawn")
+
+        component = actor.static_mesh_component
+        component.set_static_mesh(bush_mesh)
+        component.set_mobility(unreal.ComponentMobility.STATIC)
+        component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+
+        actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
+        count += 1
+
+    # Simple non-colliding curb/median bands make the main north/south and
+    # east/west axes read like designed boulevards without affecting handling.
+    curb_mat = mats["sidewalk"] or mats["marking"]
+    for index, offset in enumerate((-760.0, 760.0)):
+        cube(
+            PREFIX + "Env_Boulevard_NS_{:02d}".format(index),
+            unreal.Vector(offset, 0.0, 10.0),
+            unreal.Vector(34.0, 84000.0, 8.0),
+            curb_mat,
+            False,
+            False,
+        )
+        cube(
+            PREFIX + "Env_Boulevard_EW_{:02d}".format(index),
+            unreal.Vector(0.0, offset, 10.0),
+            unreal.Vector(84000.0, 34.0, 8.0),
+            curb_mat,
+            False,
+            False,
+        )
+
+    log("M11: Phase C landscaping bushes={}".format(count))
+
 
 
 def build_industrial_dressing(mats):
@@ -769,6 +843,7 @@ def main():
     build_district_pads(mats)
     build_hero_prefabs()
     build_background_districts(mats)
+    build_phase_c_landscaping(mats)
     build_industrial_dressing(mats)
     build_park_edge(mats)
     add_outer_street_lights(mats)
@@ -777,7 +852,7 @@ def main():
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE B FREE-ROAM EXPANSION COMPLETE")
+    log("M11: PHASE C ENVIRONMENT PASS COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 
