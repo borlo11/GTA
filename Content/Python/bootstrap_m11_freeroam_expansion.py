@@ -395,8 +395,8 @@ def build_district_pads(mats):
 
             cube(
                 PREFIX + "{}_Pad_{:02d}".format(district, count),
-                unreal.Vector(x, y, 8.0),
-                unreal.Vector(size, size, 16.0),
+                unreal.Vector(x, y, 5.0),
+                unreal.Vector(size, size, 10.0),
                 mats["sidewalk"],
                 True,
                 True,
@@ -558,8 +558,8 @@ def build_park_edge(mats):
     # Main civic/park plaza.
     cube(
         PREFIX + "ParkEdge_Plaza",
-        unreal.Vector(24000.0, -24000.0, 18.0),
-        unreal.Vector(8500.0, 8500.0, 20.0),
+        unreal.Vector(24000.0, -24000.0, 5.0),
+        unreal.Vector(8500.0, 8500.0, 10.0),
         mats["sidewalk"],
         True,
         True,
@@ -609,8 +609,8 @@ def build_park_edge(mats):
     # Large parking area beside the plaza.
     parking_surface = cube(
         PREFIX + "ParkEdge_ParkingSurface",
-        unreal.Vector(36000.0, -24000.0, 14.0),
-        unreal.Vector(8800.0, 7600.0, 10.0),
+        unreal.Vector(36000.0, -24000.0, 4.0),
+        unreal.Vector(8800.0, 7600.0, 8.0),
         mats["road"],
         True,
         False,
@@ -623,7 +623,7 @@ def build_park_edge(mats):
         for x in range(33000, 39001, 1000):
             cube(
                 PREFIX + "ParkingMark_{:03d}".format(marks),
-                unreal.Vector(float(x), row_y, 20.0),
+                unreal.Vector(float(x), row_y, 8.8),
                 unreal.Vector(14.0, 900.0, 1.0),
                 marking,
                 False,
