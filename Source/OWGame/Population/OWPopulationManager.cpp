@@ -61,7 +61,16 @@ bool AOWPopulationManager::FindGroundedSpawnLocation(
 
     if (const AActor* GroundActor = GroundHit.GetActor())
     {
+        const bool bIsLightweightCity =
+            World->GetMapName().Contains(TEXT("OW_LightweightCity"));
+
         if (GroundActor->ActorHasTag(TEXT("OWNoPopulationSpawn")))
+        {
+            return false;
+        }
+
+        if (bIsLightweightCity &&
+            !GroundActor->ActorHasTag(TEXT("OWWalkableSpawn")))
         {
             return false;
         }
