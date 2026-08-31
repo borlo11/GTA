@@ -195,3 +195,23 @@ Phase C therefore changes the environment strategy without increasing authored L
 - existing M9/M10 gameplay, M11 road layout, hero prefabs, industrial dressing, park/parking areas, and 60 FPS intent remain preserved.
 
 This is still a procedural staging pass, but it deliberately removes the most obvious "giant white cube" failure mode before deeper art-direction work.
+
+
+## Phase D — open-world dressing pass
+
+The next additive pass targets the exact cues that still made the expanded map read as a blockout from normal driving height.
+
+The generator now adds:
+
+- lightweight facade bands, entry/door cues and rooftop service volumes to the procedural background masses;
+- two secondary parking pockets, wheel stops and clearer parking-bay markings outside the civic lot;
+- additional district crosswalks and stop bars at outer intersections;
+- benches, bollards, bins, sign silhouettes and planter groups to restore human scale;
+- denser grouped vegetation using the confirmed local UNIBLOCKS bush mesh;
+- three lightweight edge-of-world skyline landmarks built from stepped volumes rather than single giant slabs.
+
+All Phase D content remains under the `OW_M11_` ownership prefix and is regenerated idempotently by `bootstrap_m11_freeroam_expansion.py`.
+
+The pass intentionally keeps transparent glass, dense dynamic lights, final traffic, interiors and high-cost foliage out of scope. The 60 FPS / 16.67 ms target remains authoritative.
+
+Cloud-side Unreal validation is **NOT EXECUTED** because the repository runner does not provide UE 5.8. Local editor validation must run the bootstrap, `validate_m11_freeroam_expansion.py`, representative free-roam driving and the existing gameplay automation tests.

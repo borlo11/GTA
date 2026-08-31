@@ -59,6 +59,27 @@ def main():
     loading_docks = [
         a for a in m11 if "Industrial_LoadingDock_" in a.get_actor_label()
     ]
+    facade_details = [
+        a for a in m11 if "Facade_" in a.get_actor_label()
+    ]
+    roof_details = [
+        a for a in m11 if "RoofDetail_" in a.get_actor_label()
+    ]
+    secondary_parking = [
+        a for a in m11
+        if "ParkingPocket_" in a.get_actor_label()
+        or "ParkingBay_" in a.get_actor_label()
+        or "WheelStop_" in a.get_actor_label()
+    ]
+    district_crosswalks = [
+        a for a in m11 if "DistrictCrosswalk_" in a.get_actor_label()
+    ]
+    street_props = [
+        a for a in m11 if "StreetProp_" in a.get_actor_label()
+    ]
+    skyline = [
+        a for a in m11 if "Skyline_" in a.get_actor_label()
+    ]
 
     require(len(m11) >= 250, "expected substantial additive world expansion")
     require(len(roads) >= 14, "expected at least fourteen expanded roads")
@@ -82,6 +103,30 @@ def main():
     require(
         len(loading_docks) == 3,
         "expected three industrial loading docks",
+    )
+    require(
+        len(facade_details) >= 45,
+        "expected facade cues on background massing",
+    )
+    require(
+        len(roof_details) >= 45,
+        "expected rooftop silhouette detail",
+    )
+    require(
+        len(secondary_parking) >= 30,
+        "expected two secondary dressed parking pockets",
+    )
+    require(
+        len(district_crosswalks) >= 24,
+        "expected district intersection crosswalk detail",
+    )
+    require(
+        len(street_props) >= 45,
+        "expected human-scale street furniture",
+    )
+    require(
+        len(skyline) >= 12,
+        "expected three lightweight skyline landmarks",
     )
 
     require(
@@ -114,7 +159,13 @@ def main():
     unreal.log("VALIDATE_M11: phase_c_bushes={}".format(len(phase_c_bushes)))
     unreal.log("VALIDATE_M11: phase_c_boulevards={}".format(len(phase_c_boulevards)))
     unreal.log("VALIDATE_M11: industrial_loading_docks={}".format(len(loading_docks)))
-    unreal.log("VALIDATE_M11: PHASE C CHECKS PASSED")
+    unreal.log("VALIDATE_M11: facade_details={}".format(len(facade_details)))
+    unreal.log("VALIDATE_M11: roof_details={}".format(len(roof_details)))
+    unreal.log("VALIDATE_M11: secondary_parking_parts={}".format(len(secondary_parking)))
+    unreal.log("VALIDATE_M11: district_crosswalks={}".format(len(district_crosswalks)))
+    unreal.log("VALIDATE_M11: street_props={}".format(len(street_props)))
+    unreal.log("VALIDATE_M11: skyline_parts={}".format(len(skyline)))
+    unreal.log("VALIDATE_M11: PHASE D CHECKS PASSED")
     unreal.log("VALIDATE_M11: ALL CHECKS PASSED")
 
 

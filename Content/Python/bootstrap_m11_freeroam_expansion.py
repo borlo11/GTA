@@ -458,6 +458,86 @@ def build_hero_prefabs():
     log("M11: authored outer hero prefabs={}".format(len(heroes)))
 
 
+
+def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
+    """Add low-cost facade and rooftop cues so simple massing reads as architecture."""
+    dark = mats["dark"] or mats["sidewalk"]
+    base_z = 10.0
+
+    # Rooftop service/crown volume breaks the pure-box silhouette at distance.
+    cube(
+        PREFIX + "RoofDetail_{:03d}".format(index),
+        unreal.Vector(x + ox, y + oy, base_z + sz + 52.0),
+        unreal.Vector(max(320.0, sx * 0.34), max(300.0, sy * 0.30), 104.0),
+        dark,
+        False,
+        False,
+        yaw,
+    )
+
+    rotated = int(round(yaw)) % 180 == 90
+
+    if district == "Modern":
+        # Two restrained dark facade bands suggest glazing without adding
+        # expensive transparent materials or dozens of window meshes.
+        for band_index, ratio in enumerate((0.42, 0.70)):
+            if rotated:
+                location = unreal.Vector(x + ox + sy * 0.5 + 8.0, y + oy, base_z + sz * ratio)
+                size = unreal.Vector(16.0, max(520.0, sx * 0.72), 64.0)
+            else:
+                location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 8.0, base_z + sz * ratio)
+                size = unreal.Vector(max(520.0, sx * 0.72), 16.0, 64.0)
+
+            cube(
+                PREFIX + "Facade_Modern_{:03d}_{:02d}".format(index, band_index),
+                location,
+                size,
+                dark,
+                False,
+                False,
+                0.0,
+            )
+
+    elif district == "Industrial":
+        # Large dark loading-door plane gives warehouses an obvious front.
+        if rotated:
+            location = unreal.Vector(x + ox + sy * 0.5 + 9.0, y + oy, base_z + min(250.0, sz * 0.45))
+            size = unreal.Vector(18.0, max(760.0, sx * 0.42), min(360.0, sz * 0.62))
+        else:
+            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 9.0, base_z + min(250.0, sz * 0.45))
+            size = unreal.Vector(max(760.0, sx * 0.42), 18.0, min(360.0, sz * 0.62))
+
+        cube(
+            PREFIX + "Facade_Industrial_{:03d}".format(index),
+            location,
+            size,
+            dark,
+            False,
+            False,
+            0.0,
+        )
+
+    else:
+        # Small projecting awning/entry cue keeps residential masses from
+        # reading as untouched cubes.
+        if rotated:
+            location = unreal.Vector(x + ox + sy * 0.5 + 70.0, y + oy, base_z + 225.0)
+            size = unreal.Vector(150.0, min(650.0, sx * 0.48), 70.0)
+        else:
+            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 70.0, base_z + 225.0)
+            size = unreal.Vector(min(650.0, sx * 0.48), 150.0, 70.0)
+
+        cube(
+            PREFIX + "Facade_Residential_{:03d}".format(index),
+            location,
+            size,
+            dark,
+            False,
+            False,
+            0.0,
+        )
+
+
 def build_background_districts(mats):
     """
     Phase C.1 grounded massing pass.
@@ -537,6 +617,20 @@ def build_background_districts(mats):
                     raise RuntimeError(
                         "M11: failed grounded background actor {}".format(count)
                     )
+
+                dress_background_mass(
+                    mats,
+                    district,
+                    x,
+                    y,
+                    ox,
+                    oy,
+                    sx,
+                    sy,
+                    sz,
+                    yaw,
+                    count,
+                )
 
                 count += 1
 
@@ -736,6 +830,326 @@ def build_park_edge(mats):
     log("M11: park bushes={} parking_marks={}".format(bush_count, marks))
 
 
+
+def build_secondary_parking(mats):
+    """Add two smaller believable parking pockets outside the civic lot."""
+    road = mats["road"]
+    marking = mats["marking"] or mats["sidewalk"]
+    dark = mats["dark"] or mats["sidewalk"]
+
+    lots = (
+        ("Industrial", -30000.0, -34000.0, 5600.0, 1700.0, 8),
+        ("Modern", 30000.0, 9800.0, 5600.0, 1700.0, 8),
+    )
+
+    mark_count = 0
+    stop_count = 0
+
+    for lot_index, (district, x, y, sx, sy, spaces) in enumerate(lots):
+        surface = cube(
+            PREFIX + "ParkingPocket_{}_Surface".format(district),
+            unreal.Vector(x, y, 12.0),
+            unreal.Vector(sx, sy, 4.0),
+            road,
+            True,
+            False,
+        )
+        set_tags(surface, "OWRoadSurface", "OWNoPopulationSpawn")
+
+        start_x = x - (spaces - 1) * 620.0 * 0.5
+        for i in range(spaces):
+            px = start_x + i * 620.0
+            cube(
+                PREFIX + "ParkingBay_{:03d}".format(mark_count),
+                unreal.Vector(px, y, 15.0),
+                unreal.Vector(14.0, 1180.0, 1.2),
+                marking,
+                False,
+                False,
+            )
+            mark_count += 1
+
+            cube(
+                PREFIX + "WheelStop_{:03d}".format(stop_count),
+                unreal.Vector(px, y - 610.0, 27.0),
+                unreal.Vector(360.0, 54.0, 24.0),
+                dark,
+                False,
+                False,
+            )
+            stop_count += 1
+
+    log("M11: secondary parking bays={} wheel_stops={}".format(mark_count, stop_count))
+
+
+def build_road_detail_pass(mats):
+    """Improve intersection readability without changing driving collision."""
+    marking = mats["marking"] or mats["sidewalk"]
+    crosswalk_count = 0
+    stop_count = 0
+
+    # Four district-defining outer intersections get compact crosswalk pairs.
+    for ix, iy in (
+        (-24000.0, 24000.0),
+        (24000.0, 24000.0),
+        (-24000.0, -24000.0),
+        (24000.0, -24000.0),
+    ):
+        for s in range(-3, 4):
+            cube(
+                PREFIX + "DistrictCrosswalk_{:03d}".format(crosswalk_count),
+                unreal.Vector(ix + s * 92.0, iy + 610.0, 9.6),
+                unreal.Vector(52.0, 360.0, 1.3),
+                marking,
+                False,
+                False,
+            )
+            crosswalk_count += 1
+
+    # Stop bars on selected approaches visually break the endless-grid look.
+    for x, y, sx, sy in (
+        (-24000.0, 23380.0, 720.0, 28.0),
+        (24000.0, 23380.0, 720.0, 28.0),
+        (-24000.0, -23380.0, 720.0, 28.0),
+        (24000.0, -23380.0, 720.0, 28.0),
+        (-23380.0, 24000.0, 28.0, 720.0),
+        (23380.0, 24000.0, 28.0, 720.0),
+        (-23380.0, -24000.0, 28.0, 720.0),
+        (23380.0, -24000.0, 28.0, 720.0),
+    ):
+        cube(
+            PREFIX + "StopBar_{:02d}".format(stop_count),
+            unreal.Vector(x, y, 9.7),
+            unreal.Vector(sx, sy, 1.3),
+            marking,
+            False,
+            False,
+        )
+        stop_count += 1
+
+    log("M11: district crosswalks={} stop_bars={}".format(crosswalk_count, stop_count))
+
+
+def build_street_furniture(mats):
+    """Small props restore human scale to wide roads and plazas."""
+    dark = mats["dark"] or mats["sidewalk"]
+    sidewalk = mats["sidewalk"] or mats["dark"]
+
+    prop_count = 0
+
+    # Benches: seat + back, concentrated around the park/civic space.
+    for i, (x, y, yaw) in enumerate((
+        (21400.0, -22000.0, 0.0),
+        (26600.0, -22000.0, 0.0),
+        (21400.0, -26000.0, 180.0),
+        (26600.0, -26000.0, 180.0),
+        (22500.0, -20500.0, 90.0),
+        (25500.0, -20500.0, 90.0),
+    )):
+        cube(
+            PREFIX + "StreetProp_BenchSeat_{:02d}".format(i),
+            unreal.Vector(x, y, 74.0),
+            unreal.Vector(420.0, 85.0, 38.0),
+            dark,
+            False,
+            False,
+            yaw,
+        )
+        cube(
+            PREFIX + "StreetProp_BenchBack_{:02d}".format(i),
+            unreal.Vector(x, y + 42.0, 142.0),
+            unreal.Vector(420.0, 28.0, 150.0),
+            dark,
+            False,
+            False,
+            yaw,
+        )
+        prop_count += 2
+
+    # Bollard groups protect plaza and parking entrances.
+    bollard_index = 0
+    for x, y in (
+        (31800.0, -27800.0), (32600.0, -27800.0), (33400.0, -27800.0),
+        (34200.0, -27800.0), (35000.0, -27800.0),
+        (18200.0, -19600.0), (18200.0, -20400.0), (18200.0, -21200.0),
+    ):
+        cylinder(
+            PREFIX + "StreetProp_Bollard_{:02d}".format(bollard_index),
+            unreal.Vector(x, y, 62.0),
+            24.0,
+            124.0,
+            dark,
+            False,
+        )
+        bollard_index += 1
+        prop_count += 1
+
+    # Simple litter bins at high-use corners.
+    for i, (x, y) in enumerate((
+        (20500.0, -20500.0),
+        (27500.0, -20500.0),
+        (20500.0, -27500.0),
+        (27500.0, -27500.0),
+        (-14500.0, 14500.0),
+        (14500.0, 14500.0),
+    )):
+        cylinder(
+            PREFIX + "StreetProp_Bin_{:02d}".format(i),
+            unreal.Vector(x, y, 62.0),
+            70.0,
+            124.0,
+            dark,
+            False,
+        )
+        prop_count += 1
+
+    # Eight traffic/street sign silhouettes at district gateways.
+    for i, (x, y, yaw) in enumerate((
+        (-24600.0, 24600.0, 0.0),
+        (24600.0, 24600.0, 180.0),
+        (-24600.0, -24600.0, 0.0),
+        (24600.0, -24600.0, 180.0),
+        (-12600.0, 24600.0, 0.0),
+        (12600.0, 24600.0, 180.0),
+        (-12600.0, -24600.0, 0.0),
+        (12600.0, -24600.0, 180.0),
+    )):
+        cylinder(
+            PREFIX + "StreetProp_SignPole_{:02d}".format(i),
+            unreal.Vector(x, y, 150.0),
+            12.0,
+            300.0,
+            dark,
+            False,
+        )
+        cube(
+            PREFIX + "StreetProp_SignPlate_{:02d}".format(i),
+            unreal.Vector(x, y, 275.0),
+            unreal.Vector(145.0, 18.0, 92.0),
+            sidewalk,
+            False,
+            False,
+            yaw,
+        )
+        prop_count += 2
+
+    log("M11: street furniture parts={}".format(prop_count))
+
+
+def build_green_clusters(mats):
+    """Group confirmed UNIBLOCKS bushes with planters for stronger vegetation reads."""
+    bush_mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Bush_x150")
+    if not bush_mesh:
+        warn("M11: green clusters skipped; SM_UB_Bush_x150 unavailable")
+        return
+
+    dark = mats["dark"] or mats["sidewalk"]
+    clusters = (
+        (-34000.0, 15500.0), (-28500.0, 15500.0), (-22000.0, 15500.0),
+        (-34000.0, 33500.0), (-26000.0, 33500.0), (-15000.0, 33500.0),
+        (15500.0, 17500.0), (33500.0, 15500.0), (33500.0, 28500.0),
+        (20000.0, -28500.0), (28000.0, -28500.0), (20000.0, -19500.0),
+    )
+
+    bush_count = 0
+    for cluster_index, (cx, cy) in enumerate(clusters):
+        cube(
+            PREFIX + "StreetProp_Planter_{:02d}".format(cluster_index),
+            unreal.Vector(cx, cy, 44.0),
+            unreal.Vector(520.0, 520.0, 88.0),
+            dark,
+            False,
+            False,
+        )
+
+        for ox, oy, scale in ((-150.0, -70.0, 0.56), (145.0, -45.0, 0.64), (10.0, 145.0, 0.52)):
+            actor = actor_subsystem().spawn_actor_from_class(
+                unreal.StaticMeshActor,
+                unreal.Vector(cx + ox, cy + oy, 116.0),
+                unreal.Rotator(0.0, float((bush_count * 43) % 360), 0.0),
+            )
+            if not actor:
+                continue
+            set_label(actor, PREFIX + "Env_GreenCluster_{:03d}".format(bush_count))
+            set_tags(actor, "OWNoPopulationSpawn")
+            actor.static_mesh_component.set_static_mesh(bush_mesh)
+            actor.static_mesh_component.set_mobility(unreal.ComponentMobility.STATIC)
+            actor.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+            actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
+            bush_count += 1
+
+    log("M11: green cluster bushes={}".format(bush_count))
+
+
+def build_skyline_landmarks(mats):
+    """Add a few edge-of-world vertical anchors built from lightweight masses."""
+    backgrounds = mats["background"] or [mats["sidewalk"]]
+    dark = mats["dark"] or mats["sidewalk"]
+
+    sites = (
+        ("EastGate", 42500.0, 30000.0, 1900.0, 1700.0, 6200.0),
+        ("NorthGate", 30000.0, 42500.0, 1700.0, 1900.0, 7600.0),
+        ("Corner", 42000.0, 42000.0, 1500.0, 1500.0, 9000.0),
+    )
+
+    parts = 0
+    for index, (name, x, y, sx, sy, tower_h) in enumerate(sites):
+        pad_size = 6200.0 if name != "Corner" else 5200.0
+        cube(
+            PREFIX + "Skyline_{}_Pad".format(name),
+            unreal.Vector(x, y, -4.0),
+            unreal.Vector(pad_size, pad_size, 12.0),
+            mats["sidewalk"],
+            True,
+            False,
+        )
+
+        podium_h = 650.0
+        cube(
+            PREFIX + "Skyline_{}_Podium".format(name),
+            unreal.Vector(x, y, podium_h * 0.5),
+            unreal.Vector(sx * 1.55, sy * 1.55, podium_h),
+            backgrounds[index % len(backgrounds)],
+            True,
+            False,
+        )
+        parts += 1
+
+        cube(
+            PREFIX + "Skyline_{}_Tower".format(name),
+            unreal.Vector(x, y, podium_h + tower_h * 0.5),
+            unreal.Vector(sx, sy, tower_h),
+            backgrounds[(index + 1) % len(backgrounds)],
+            True,
+            False,
+        )
+        parts += 1
+
+        crown_h = 520.0
+        cube(
+            PREFIX + "Skyline_{}_Crown".format(name),
+            unreal.Vector(x, y, podium_h + tower_h + crown_h * 0.5),
+            unreal.Vector(sx * 0.62, sy * 0.62, crown_h),
+            dark,
+            False,
+            False,
+        )
+        parts += 1
+
+        # One offset rooftop/service box prevents a perfectly symmetrical toy silhouette.
+        cube(
+            PREFIX + "Skyline_{}_RoofService".format(name),
+            unreal.Vector(x + sx * 0.22, y - sy * 0.18, podium_h + tower_h + crown_h + 115.0),
+            unreal.Vector(340.0, 300.0, 230.0),
+            dark,
+            False,
+            False,
+        )
+        parts += 1
+
+    log("M11: skyline landmark parts={}".format(parts))
+
+
 def add_outer_street_lights(mats):
     dark = mats["dark"] or mats["sidewalk"]
     positions = []
@@ -874,13 +1288,21 @@ def main():
     build_phase_c_landscaping(mats)
     build_industrial_dressing(mats)
     build_park_edge(mats)
+
+    # Phase D: make the expanded grid read like a lived-in open-world district.
+    build_secondary_parking(mats)
+    build_road_detail_pass(mats)
+    build_street_furniture(mats)
+    build_green_clusters(mats)
+    build_skyline_landmarks(mats)
+
     add_outer_street_lights(mats)
     disable_prefab_local_lights()
 
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE C ENVIRONMENT PASS COMPLETE")
+    log("M11: PHASE D OPEN-WORLD DRESSING PASS COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 
