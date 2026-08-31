@@ -30,7 +30,7 @@ public:
     bool IsPerformanceOverlayVisible() const { return bShowPerformanceOverlay; }
 
     UFUNCTION(BlueprintCallable, Category="Vehicle")
-    bool EnterChaosVehicle(APawn* VehiclePawn, AOWGameCharacter* Character);
+    bool EnterChaosVehicle(APawn* VehiclePawn, AOWGameCharacter* DriverCharacter);
 
     UFUNCTION(BlueprintCallable, Category="Vehicle")
     void ExitChaosVehicle();
