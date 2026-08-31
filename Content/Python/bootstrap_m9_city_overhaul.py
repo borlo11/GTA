@@ -51,7 +51,6 @@ DARK_MATERIAL_NAMES = (
 
 BACKGROUND_BUILDING_MATERIAL_NAMES = (
     "MI_UBT_brickwork_white",
-    "MI_UBT_concreteRaw_gray_plain",
     "MI_UBT_concreteSmooth_gray",
 )
 
@@ -487,9 +486,9 @@ def build_prefab_district(mats):
             ]
 
             # Conservative background scale: urban silhouette, not a giant tower.
-            height = 720.0 + (background_index % 3) * 180.0
-            width_x = 1450.0 + (background_index % 2) * 220.0
-            width_y = 1350.0 + ((background_index + 1) % 2) * 240.0
+            height = 560.0 + (background_index % 3) * 120.0
+            width_x = 1180.0 + (background_index % 2) * 140.0
+            width_y = 1120.0 + ((background_index + 1) % 2) * 160.0
 
             spawn_background_building(
                 PREFIX + "Building_{:02d}_Background".format(background_index + 1),
@@ -661,7 +660,6 @@ def optimize_prefab_runtime_cost():
 
 
 def setup_lighting():
-def setup_lighting():
     subsystem = actor_subsystem()
 
     sun = subsystem.spawn_actor_from_class(
@@ -698,8 +696,9 @@ def setup_lighting():
     try:
         component = skylight.get_component_by_class(unreal.SkyLightComponent)
         component.set_mobility(unreal.ComponentMobility.MOVABLE)
-        component.set_editor_property("real_time_capture", True)
+        component.set_editor_property("real_time_capture", False)
         component.set_editor_property("intensity", 0.55)
+        component.recapture_sky()
     except Exception as exc:
         warn("M9: skylight warning: {}".format(exc))
 
@@ -724,6 +723,31 @@ def setup_lighting():
             unreal.Rotator(0.0, 0.0, 0.0),
         )
         set_label(cloud, PREFIX + "VolumetricCloud")
+
+        cloud_component = cloud.get_component_by_class(unreal.VolumetricCloudComponent)
+        if cloud_component:
+            try:
+                cloud_component.set_editor_property("view_sample_count_scale", 0.55)
+            except Exception:
+                pass
+            try:
+                cloud_component.set_editor_property("shadow_view_sample_count_scale", 0.35)
+            except Exception:
+                pass
+            try:
+                cloud_component.set_editor_property(
+                    "reflection_view_sample_count_scale_value",
+                    0.35,
+                )
+            except Exception:
+                pass
+            try:
+                cloud_component.set_editor_property(
+                    "shadow_reflection_view_sample_count_scale_value",
+                    0.25,
+                )
+            except Exception:
+                pass
     except Exception:
         pass
 
