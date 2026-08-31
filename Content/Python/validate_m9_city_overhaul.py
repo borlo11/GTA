@@ -1,5 +1,5 @@
 # validate_m9_city_overhaul.py
-# Corrected M9 validator for OW_LightweightCity.
+# M9 validator for the authored-UNIBLOCKS prefab city pass.
 
 import unreal
 
@@ -25,6 +25,7 @@ def main():
         ).get_all_level_actors()
         if actor
     ]
+
     labels = [actor.get_actor_label() for actor in actors]
 
     buildings = [x for x in labels if x.startswith(PREFIX + "Building_")]
@@ -45,10 +46,38 @@ def main():
     require(PREFIX + "Fog" in labels, "fog missing")
 
     require(len(pads) >= 16, "urban block pads missing")
-    require(len(buildings) >= 24, "building massing too sparse")
+    require(len(buildings) >= 14, "expected 14 authored prefab building instances")
     require(len(road_marks) >= 60, "lane markings too sparse")
-    require(len(crosswalks) == 24, "expected four compact six-stripe crosswalks")
+    require(len(crosswalks) == 24, "expected four six-stripe crosswalks")
     require(len(lights) >= 20, "street-light geometry missing")
+
+    prefab_instances = []
+    if hasattr(unreal, "LevelInstance"):
+        prefab_instances = [
+            actor
+            for actor in actors
+            if isinstance(actor, unreal.LevelInstance)
+            and actor.get_actor_label().startswith(PREFIX + "Building_")
+        ]
+
+    require(
+        len(prefab_instances) >= 14,
+        "authored UNIBLOCKS LevelInstances missing: {}".format(len(prefab_instances)),
+    )
+
+    world_assets = set()
+    for instance in prefab_instances:
+        try:
+            world_asset = instance.get_world_asset()
+            if world_asset:
+                world_assets.add(world_asset.get_path_name())
+        except Exception:
+            pass
+
+    require(
+        len(world_assets) >= 4,
+        "prefab variety too low: {}".format(sorted(world_assets)),
+    )
 
     world = unreal.EditorLevelLibrary.get_editor_world()
     settings = world.get_world_settings() if world else None
@@ -60,10 +89,10 @@ def main():
         "wrong GameMode: {}".format(game_mode),
     )
 
-    unreal.log("VALIDATE_M9: BUILDING_PARTS={}".format(len(buildings)))
+    unreal.log("VALIDATE_M9: PREFAB_INSTANCES={}".format(len(prefab_instances)))
+    unreal.log("VALIDATE_M9: PREFAB_VARIANTS={}".format(len(world_assets)))
     unreal.log("VALIDATE_M9: ROAD_MARKS={}".format(len(road_marks)))
     unreal.log("VALIDATE_M9: CROSSWALKS={}".format(len(crosswalks)))
-    unreal.log("VALIDATE_M9: STREETLIGHT_PARTS={}".format(len(lights)))
     unreal.log("VALIDATE_M9: ALL CHECKS PASSED")
 
 
