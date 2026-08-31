@@ -3,6 +3,7 @@
 #include "OWPopulationNPC.h"
 
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 
 AOWPopulationManager::AOWPopulationManager()
@@ -87,25 +88,121 @@ bool AOWPopulationManager::FindGroundedSpawnLocation(
     return true;
 }
 
-bool AOWPopulationManager::SpawnOneNear(const FVector& PlayerLocation)
+bool AOWPopulationManager::IsSpawnHiddenFromPlayer(
+    const FVector& SpawnLocation,
+    APlayerController* PlayerController,
+    APawn* PlayerPawn) const
 {
     UWorld* World = GetWorld();
-    if (!World || !NPCClass)
+    if (!World || !PlayerController || !PlayerPawn)
     {
         return false;
     }
 
-    for (int32 Attempt = 0; Attempt < 10; ++Attempt)
+    FVector ToSpawn2D = SpawnLocation - PlayerPawn->GetActorLocation();
+    ToSpawn2D.Z = 0.0f;
+    if (!ToSpawn2D.Normalize())
+    {
+        return false;
+    }
+
+    FVector Velocity2D = PlayerPawn->GetVelocity();
+    Velocity2D.Z = 0.0f;
+    const float Speed2D = Velocity2D.Size();
+
+    // When driving, protect the entire direction of travel even if the player
+    // has rotated the camera sideways/backwards. Pedestrians should already
+    // exist before the car reaches them, never materialize in the lane ahead.
+    if (Speed2D >= FastMovementThreshold)
+    {
+        Velocity2D /= Speed2D;
+        if (FVector::DotProduct(Velocity2D, ToSpawn2D) > 0.10f)
+        {
+            return false;
+        }
+    }
+
+    FVector ViewLocation;
+    FRotator ViewRotation;
+    PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+
+    FVector ViewToSpawn = SpawnLocation - ViewLocation;
+    if (!ViewToSpawn.Normalize())
+    {
+        return false;
+    }
+
+    const float ViewDot =
+        FVector::DotProduct(ViewRotation.Vector(), ViewToSpawn);
+
+    // Behind the protected camera cone is safe: the player cannot observe the
+    // actual spawn frame. For points in/near the view, require real occlusion.
+    if (ViewDot < VisibleSpawnDotThreshold)
+    {
+        return true;
+    }
+
+    FCollisionQueryParams VisibilityParams(
+        SCENE_QUERY_STAT(OWPopulationSpawnVisibility),
+        false,
+        this);
+    VisibilityParams.AddIgnoredActor(PlayerPawn);
+
+    for (const AOWPopulationNPC* NPC : Population)
+    {
+        if (IsValid(NPC))
+        {
+            VisibilityParams.AddIgnoredActor(NPC);
+        }
+    }
+
+    FHitResult VisibilityHit;
+    const FVector Target = SpawnLocation + FVector(0.0f, 0.0f, 35.0f);
+
+    const bool bBlocked = World->LineTraceSingleByChannel(
+        VisibilityHit,
+        ViewLocation,
+        Target,
+        ECC_Visibility,
+        VisibilityParams);
+
+    return bBlocked;
+}
+
+bool AOWPopulationManager::SpawnOneNear(
+    const FVector& PlayerLocation,
+    APlayerController* PlayerController,
+    APawn* PlayerPawn)
+{
+    UWorld* World = GetWorld();
+    if (!World || !NPCClass || !PlayerController || !PlayerPawn)
+    {
+        return false;
+    }
+
+    for (int32 Attempt = 0; Attempt < 18; ++Attempt)
     {
         const float Angle = SpawnRandomStream.FRandRange(0.0f, 2.0f * PI);
-        const float Radius = SpawnRandomStream.FRandRange(MinimumSpawnRadius, MaximumSpawnRadius);
+        const float Radius =
+            SpawnRandomStream.FRandRange(MinimumSpawnRadius, MaximumSpawnRadius);
 
         const FVector Candidate =
             PlayerLocation +
-            FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.0f);
+            FVector(
+                FMath::Cos(Angle) * Radius,
+                FMath::Sin(Angle) * Radius,
+                0.0f);
 
         FVector SpawnLocation;
         if (!FindGroundedSpawnLocation(Candidate, SpawnLocation))
+        {
+            continue;
+        }
+
+        if (!IsSpawnHiddenFromPlayer(
+            SpawnLocation,
+            PlayerController,
+            PlayerPawn))
         {
             continue;
         }
@@ -117,7 +214,10 @@ bool AOWPopulationManager::SpawnOneNear(const FVector& PlayerLocation)
         AOWPopulationNPC* NPC = World->SpawnActor<AOWPopulationNPC>(
             NPCClass,
             SpawnLocation,
-            FRotator(0.0f, SpawnRandomStream.FRandRange(-180.0f, 180.0f), 0.0f),
+            FRotator(
+                0.0f,
+                SpawnRandomStream.FRandRange(-180.0f, 180.0f),
+                0.0f),
             SpawnParameters);
 
         if (!NPC)
@@ -190,7 +290,7 @@ void AOWPopulationManager::UpdatePopulation()
     while (Population.Num() < TargetPopulation && SpawnAttempts < TargetPopulation * 3)
     {
         ++SpawnAttempts;
-        if (!SpawnOneNear(PlayerLocation))
+        if (!SpawnOneNear(PlayerLocation, PlayerController, PlayerPawn))
         {
             break;
         }
