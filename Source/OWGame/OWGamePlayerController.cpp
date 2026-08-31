@@ -96,11 +96,17 @@ void AOWGamePlayerController::SetupInputComponent()
         IE_Released,
         this,
         &AOWGamePlayerController::VehicleHandbrakeReleased);
-    InputComponent->BindKey(
+    FInputKeyBinding& VehicleExitBinding = InputComponent->BindKey(
         EKeys::E,
         IE_Pressed,
         this,
         &AOWGamePlayerController::VehicleExitPressed);
+
+    // Do not consume E while the player is on foot. The character's
+    // Enhanced Input IA_Interact also uses E to enter vehicles / interact
+    // with world objects. Consuming it here made the enter interaction never
+    // reach AOWGameCharacter::TryInteract().
+    VehicleExitBinding.bConsumeInput = false;
 
     InputComponent->BindAxisKey(
         EKeys::MouseX,
