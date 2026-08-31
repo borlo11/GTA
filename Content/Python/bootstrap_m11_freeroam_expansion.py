@@ -663,109 +663,67 @@ def add_authored_facade_detail(district, x, y, ox, oy, sx, sy, sz, yaw, index):
 
 
 def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
-    """Readable facade rhythm at driving height without expensive glass/material systems."""
+    """Four-sided facade treatment so no camera angle falls back to a blank cube."""
     dark = mats["dark"] or mats["sidewalk"]
     light = mats["marking"] or mats["sidewalk"]
     base_z = 10.0
     cx = x + ox
     cy = y + oy
 
-    # Rooftop service volume breaks the raw cuboid silhouette.
     cube(
         PREFIX + "RoofDetail_{:03d}".format(index),
         unreal.Vector(cx, cy, base_z + sz + 52.0),
-        unreal.Vector(max(320.0, sx * 0.34), max(300.0, sy * 0.30), 104.0),
+        unreal.Vector(max(360.0, sx * 0.38), max(320.0, sy * 0.34), 104.0),
         dark,
         False,
         False,
         yaw,
     )
 
-    rotated = int(round(yaw)) % 180 == 90
+    parapet_h = 78.0
+    for side, px, py, psx, psy in (
+        ("N", cx, cy + sy * 0.5 - 18.0, sx * 0.92, 32.0),
+        ("S", cx, cy - sy * 0.5 + 18.0, sx * 0.92, 32.0),
+        ("E", cx + sx * 0.5 - 18.0, cy, 32.0, sy * 0.92),
+        ("W", cx - sx * 0.5 + 18.0, cy, 32.0, sy * 0.92),
+    ):
+        cube(
+            PREFIX + "Facade4S_Parapet_{}_{:03d}".format(side, index),
+            unreal.Vector(px, py, base_z + sz + parapet_h * 0.5),
+            unreal.Vector(psx, psy, parapet_h),
+            dark,
+            False,
+            False,
+        )
 
-    # We dress one road-facing facade. Horizontal strips read as window rows
-    # from a moving car and are vastly cheaper than hundreds of glass panes.
     if district == "Modern":
-        row_count = max(3, min(5, int(sz / 420.0)))
-        for row in range(row_count):
-            ratio = (row + 1.0) / (row_count + 1.0)
-            if rotated:
-                location = unreal.Vector(cx + sy * 0.5 + 9.0, cy, base_z + sz * ratio)
-                size = unreal.Vector(18.0, max(620.0, sx * 0.74), 86.0)
-            else:
-                location = unreal.Vector(cx, cy + sy * 0.5 + 9.0, base_z + sz * ratio)
-                size = unreal.Vector(max(620.0, sx * 0.74), 18.0, 86.0)
-
-            cube(
-                PREFIX + "Facade_WindowRow_Modern_{:03d}_{:02d}".format(index, row),
-                location,
-                size,
-                dark,
-                False,
-                False,
-            )
-
-        # Ground-floor canopy/storefront band.
-        if rotated:
-            canopy_location = unreal.Vector(cx + sy * 0.5 + 85.0, cy, base_z + 245.0)
-            canopy_size = unreal.Vector(170.0, max(700.0, sx * 0.64), 70.0)
-        else:
-            canopy_location = unreal.Vector(cx, cy + sy * 0.5 + 85.0, base_z + 245.0)
-            canopy_size = unreal.Vector(max(700.0, sx * 0.64), 170.0, 70.0)
-
-        cube(
-            PREFIX + "Facade_Canopy_Modern_{:03d}".format(index),
-            canopy_location,
-            canopy_size,
-            light,
-            False,
-            False,
-        )
-
+        row_count = max(3, min(5, int(sz / 430.0)))
+        row_h = 88.0
+        coverage = 0.78
     elif district == "Industrial":
-        # Large loading door plus a high clerestory strip.
-        if rotated:
-            door_location = unreal.Vector(cx + sy * 0.5 + 10.0, cy, base_z + min(280.0, sz * 0.42))
-            door_size = unreal.Vector(20.0, max(900.0, sx * 0.48), min(430.0, sz * 0.68))
-            strip_location = unreal.Vector(cx + sy * 0.5 + 11.0, cy, base_z + sz * 0.76)
-            strip_size = unreal.Vector(22.0, max(1300.0, sx * 0.62), 70.0)
-        else:
-            door_location = unreal.Vector(cx, cy + sy * 0.5 + 10.0, base_z + min(280.0, sz * 0.42))
-            door_size = unreal.Vector(max(900.0, sx * 0.48), 20.0, min(430.0, sz * 0.68))
-            strip_location = unreal.Vector(cx, cy + sy * 0.5 + 11.0, base_z + sz * 0.76)
-            strip_size = unreal.Vector(max(1300.0, sx * 0.62), 22.0, 70.0)
-
-        cube(
-            PREFIX + "Facade_IndustrialDoor_{:03d}".format(index),
-            door_location,
-            door_size,
-            dark,
-            False,
-            False,
-        )
-        cube(
-            PREFIX + "Facade_IndustrialClerestory_{:03d}".format(index),
-            strip_location,
-            strip_size,
-            dark,
-            False,
-            False,
-        )
-
+        row_count = 2
+        row_h = 76.0
+        coverage = 0.68
     else:
-        # Residential / park-edge: two window rows plus an entrance canopy.
         row_count = 2 if sz < 1000.0 else 3
-        for row in range(row_count):
-            ratio = 0.42 + row * 0.24
-            if rotated:
-                location = unreal.Vector(cx + sy * 0.5 + 9.0, cy, base_z + sz * ratio)
-                size = unreal.Vector(18.0, max(520.0, sx * 0.62), 72.0)
-            else:
-                location = unreal.Vector(cx, cy + sy * 0.5 + 9.0, base_z + sz * ratio)
-                size = unreal.Vector(max(520.0, sx * 0.62), 18.0, 72.0)
+        row_h = 74.0
+        coverage = 0.66
 
+    for row in range(row_count):
+        ratio = 0.36 + row * (0.48 / max(1, row_count - 1))
+        z = base_z + sz * ratio
+
+        north_south_size = unreal.Vector(max(500.0, sx * coverage), 18.0, row_h)
+        east_west_size = unreal.Vector(18.0, max(500.0, sy * coverage), row_h)
+
+        for side, location, size in (
+            ("N", unreal.Vector(cx, cy + sy * 0.5 + 9.0, z), north_south_size),
+            ("S", unreal.Vector(cx, cy - sy * 0.5 - 9.0, z), north_south_size),
+            ("E", unreal.Vector(cx + sx * 0.5 + 9.0, cy, z), east_west_size),
+            ("W", unreal.Vector(cx - sx * 0.5 - 9.0, cy, z), east_west_size),
+        ):
             cube(
-                PREFIX + "Facade_WindowRow_Residential_{:03d}_{:02d}".format(index, row),
+                PREFIX + "Facade4S_WindowRow_{}_{}_{}".format(side, index, row),
                 location,
                 size,
                 dark,
@@ -773,21 +731,62 @@ def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
                 False,
             )
 
-        if rotated:
-            canopy_location = unreal.Vector(cx + sy * 0.5 + 70.0, cy, base_z + 215.0)
-            canopy_size = unreal.Vector(140.0, min(760.0, sx * 0.44), 64.0)
-        else:
-            canopy_location = unreal.Vector(cx, cy + sy * 0.5 + 70.0, base_z + 215.0)
-            canopy_size = unreal.Vector(min(760.0, sx * 0.44), 140.0, 64.0)
-
+    pier_h = max(300.0, sz * 0.52)
+    pier_z = base_z + sz * 0.58
+    for side, location, size in (
+        ("N", unreal.Vector(cx - sx * 0.24, cy + sy * 0.5 + 10.0, pier_z), unreal.Vector(42.0, 20.0, pier_h)),
+        ("N2", unreal.Vector(cx + sx * 0.24, cy + sy * 0.5 + 10.0, pier_z), unreal.Vector(42.0, 20.0, pier_h)),
+        ("S", unreal.Vector(cx - sx * 0.24, cy - sy * 0.5 - 10.0, pier_z), unreal.Vector(42.0, 20.0, pier_h)),
+        ("S2", unreal.Vector(cx + sx * 0.24, cy - sy * 0.5 - 10.0, pier_z), unreal.Vector(42.0, 20.0, pier_h)),
+        ("E", unreal.Vector(cx + sx * 0.5 + 10.0, cy - sy * 0.24, pier_z), unreal.Vector(20.0, 42.0, pier_h)),
+        ("E2", unreal.Vector(cx + sx * 0.5 + 10.0, cy + sy * 0.24, pier_z), unreal.Vector(20.0, 42.0, pier_h)),
+        ("W", unreal.Vector(cx - sx * 0.5 - 10.0, cy - sy * 0.24, pier_z), unreal.Vector(20.0, 42.0, pier_h)),
+        ("W2", unreal.Vector(cx - sx * 0.5 - 10.0, cy + sy * 0.24, pier_z), unreal.Vector(20.0, 42.0, pier_h)),
+    ):
         cube(
-            PREFIX + "Facade_EntryCanopy_{:03d}".format(index),
-            canopy_location,
-            canopy_size,
-            dark,
+            PREFIX + "Facade4S_Pier_{}_{:03d}".format(side, index),
+            location,
+            size,
+            light if district == "Modern" else dark,
             False,
             False,
         )
+
+    ground_z = base_z + 215.0
+    if district == "Industrial":
+        ground_h = min(420.0, sz * 0.56)
+        front_w = max(900.0, sx * 0.50)
+    else:
+        ground_h = 250.0
+        front_w = max(600.0, sx * 0.48)
+
+    cube(
+        PREFIX + "Facade4S_Ground_N_{:03d}".format(index),
+        unreal.Vector(cx, cy + sy * 0.5 + 11.0, ground_z),
+        unreal.Vector(front_w, 22.0, ground_h),
+        dark,
+        False,
+        False,
+    )
+    cube(
+        PREFIX + "Facade4S_Ground_S_{:03d}".format(index),
+        unreal.Vector(cx, cy - sy * 0.5 - 11.0, ground_z),
+        unreal.Vector(front_w, 22.0, ground_h),
+        dark,
+        False,
+        False,
+    )
+
+    canopy_depth = 165.0 if district != "Industrial" else 120.0
+    canopy_width = min(sx * 0.56, 1100.0)
+    cube(
+        PREFIX + "Facade4S_Canopy_N_{:03d}".format(index),
+        unreal.Vector(cx, cy + sy * 0.5 + canopy_depth * 0.5, base_z + 285.0),
+        unreal.Vector(canopy_width, canopy_depth, 58.0),
+        light if district == "Modern" else dark,
+        False,
+        False,
+    )
 
 
 def build_background_districts(mats):
@@ -1352,6 +1351,82 @@ def build_green_clusters(mats):
     log("M11: green cluster bushes={}".format(bush_count))
 
 
+def build_curbside_parking_details(mats):
+    """Small curbside parking bays and stop blocks add road-edge rhythm without spawning traffic."""
+    road = mats["road"]
+    marking = mats["marking"] or mats["sidewalk"]
+    dark = mats["dark"] or mats["sidewalk"]
+
+    pockets = (
+        (-18000.0, 11200.0, 0.0),
+        (18000.0, 11200.0, 0.0),
+        (-18000.0, -11200.0, 180.0),
+        (18000.0, -11200.0, 180.0),
+        (11200.0, -18000.0, 90.0),
+        (11200.0, 18000.0, 90.0),
+        (-11200.0, -18000.0, 270.0),
+        (-11200.0, 18000.0, 270.0),
+    )
+
+    bay_count = 0
+    wheel_count = 0
+
+    for pocket_index, (cx, cy, yaw) in enumerate(pockets):
+        horizontal = int(yaw) % 180 == 0
+        surface_size = (
+            unreal.Vector(4200.0, 900.0, 5.0)
+            if horizontal
+            else unreal.Vector(900.0, 4200.0, 5.0)
+        )
+
+        surface = cube(
+            PREFIX + "CurbParking_Surface_{:02d}".format(pocket_index),
+            unreal.Vector(cx, cy, 11.5),
+            surface_size,
+            road,
+            True,
+            False,
+        )
+        set_tags(surface, "OWRoadSurface", "OWNoPopulationSpawn")
+
+        for slot in range(-2, 3):
+            offset = slot * 760.0
+            if horizontal:
+                mx = cx + offset
+                my = cy
+                mark_size = unreal.Vector(14.0, 720.0, 1.2)
+                stop_loc = unreal.Vector(mx, cy + 330.0, 25.0)
+                stop_size = unreal.Vector(330.0, 48.0, 24.0)
+            else:
+                mx = cx
+                my = cy + offset
+                mark_size = unreal.Vector(720.0, 14.0, 1.2)
+                stop_loc = unreal.Vector(cx + 330.0, my, 25.0)
+                stop_size = unreal.Vector(48.0, 330.0, 24.0)
+
+            cube(
+                PREFIX + "CurbParking_Mark_{:03d}".format(bay_count),
+                unreal.Vector(mx, my, 15.0),
+                mark_size,
+                marking,
+                False,
+                False,
+            )
+            bay_count += 1
+
+            cube(
+                PREFIX + "CurbParking_Stop_{:03d}".format(wheel_count),
+                stop_loc,
+                stop_size,
+                dark,
+                False,
+                False,
+            )
+            wheel_count += 1
+
+    log("M11: curbside parking bays={} stops={}".format(bay_count, wheel_count))
+
+
 def build_boulevard_greenery():
     """Visible planting along the two main axes so street-level views stop reading as concrete deserts."""
     bush_mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Bush_x150")
@@ -1685,6 +1760,7 @@ def main():
     build_secondary_parking(mats)
     build_road_detail_pass(mats)
     build_street_furniture(mats)
+    build_curbside_parking_details(mats)
     build_green_clusters(mats)
     build_boulevard_greenery()
     build_street_tree_rows()
@@ -1697,7 +1773,7 @@ def main():
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE G STREET-LEVEL READABILITY PASS COMPLETE")
+    log("M11: PHASE H FOUR-SIDED FACADES PASS COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 

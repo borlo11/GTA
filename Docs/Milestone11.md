@@ -269,3 +269,19 @@ Phase G therefore focuses on the player-height view:
 - all new dressing remains static/non-colliding and keeps the existing gameplay/vehicle coordinates intact.
 
 The intent is to make a normal driving screenshot read as an urban street first and as procedural generation second.
+
+
+## Phase H — four-sided facades
+
+The Phase G road-height screenshot exposed the next dominant blockout cue: buildings looked acceptable from the dressed frontage but immediately became giant blank walls from side/rear camera angles.
+
+Phase H treats every cheap background building as an object that must survive a 360-degree driving camera:
+
+- window-row bands are generated on north, south, east and west facades;
+- vertical facade piers break continuous strips into a readable window grid;
+- roof parapet bands and service volumes break raw engine-cube silhouettes;
+- ground-floor dark storefront/entrance bands appear on opposing sides;
+- projecting canopies create actual shadow/depth at pedestrian height;
+- eight small curbside parking pockets add road-edge markings and wheel stops near internal blocks.
+
+The pass deliberately uses opaque low-cost static geometry rather than transparent glass or hundreds of individual window assets, preserving the performance-first prototype target while removing the most obvious blank-wall failure mode.

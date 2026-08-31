@@ -97,6 +97,12 @@ def main():
     boulevard_bushes = [
         a for a in m11 if "Env_BoulevardBush_" in a.get_actor_label()
     ]
+    facade_four_sided = [
+        a for a in m11 if "Facade4S_" in a.get_actor_label()
+    ]
+    curb_parking = [
+        a for a in m11 if "CurbParking_" in a.get_actor_label()
+    ]
 
     require(len(m11) >= 250, "expected substantial additive world expansion")
     require(len(roads) >= 14, "expected at least fourteen expanded roads")
@@ -153,6 +159,14 @@ def main():
         len(boulevard_bushes) >= 30,
         "expected visible boulevard greenery on the main axes",
     )
+    require(
+        len(facade_four_sided) >= 500,
+        "expected four-sided facade dressing on dense background architecture",
+    )
+    require(
+        len(curb_parking) >= 80,
+        "expected eight dressed curbside parking pockets",
+    )
 
     require(
         "OW_M10_SportsCar" in labels,
@@ -195,7 +209,9 @@ def main():
     unreal.log("VALIDATE_M11: authored_lamps={}".format(len(authored_lamps)))
     unreal.log("VALIDATE_M11: inner_streetlight_parts={}".format(len(inner_streetlights)))
     unreal.log("VALIDATE_M11: boulevard_bushes={}".format(len(boulevard_bushes)))
-    unreal.log("VALIDATE_M11: PHASE G CHECKS PASSED")
+    unreal.log("VALIDATE_M11: four_sided_facade_parts={}".format(len(facade_four_sided)))
+    unreal.log("VALIDATE_M11: curb_parking_parts={}".format(len(curb_parking)))
+    unreal.log("VALIDATE_M11: PHASE H CHECKS PASSED")
     unreal.log("VALIDATE_M11: ALL CHECKS PASSED")
 
 
