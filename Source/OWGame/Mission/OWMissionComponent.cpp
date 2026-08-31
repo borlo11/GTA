@@ -5,7 +5,6 @@
 #include "../OWGame.h"
 #include "../OWGamePlayerController.h"
 #include "../Crime/OWWantedComponent.h"
-#include "../Vehicle/OWPrototypeVehicle.h"
 
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -163,7 +162,7 @@ FText UOWMissionComponent::GetCurrentObjectiveText() const
     return Objectives[CurrentObjectiveIndex].Description;
 }
 
-AOWPrototypeVehicle* UOWMissionComponent::FindPrototypeVehicle() const
+APawn* UOWMissionComponent::FindMissionVehicle() const
 {
     UWorld* World = GetWorld();
     if (!World)
@@ -177,13 +176,14 @@ AOWPrototypeVehicle* UOWMissionComponent::FindPrototypeVehicle() const
     const FVector ReferenceLocation =
         PlayerPawn ? PlayerPawn->GetActorLocation() : FVector::ZeroVector;
 
-    AOWPrototypeVehicle* BestVehicle = nullptr;
+    APawn* BestVehicle = nullptr;
     float BestDistanceSquared = TNumericLimits<float>::Max();
 
-    for (TActorIterator<AOWPrototypeVehicle> It(World); It; ++It)
+    for (TActorIterator<APawn> It(World); It; ++It)
     {
-        AOWPrototypeVehicle* Vehicle = *It;
-        if (!IsValid(Vehicle))
+        APawn* Vehicle = *It;
+        if (!IsValid(Vehicle) ||
+            !Vehicle->ActorHasTag(TEXT("OWMissionVehicle")))
         {
             continue;
         }
@@ -216,7 +216,7 @@ FVector UOWMissionComponent::ResolveCurrentObjectiveLocation(bool& bHasLocation)
     if (Objective.Type == EOWMissionObjectiveType::ReachVehicle ||
         Objective.Type == EOWMissionObjectiveType::EnterVehicle)
     {
-        if (const AOWPrototypeVehicle* Vehicle = FindPrototypeVehicle())
+        if (const APawn* Vehicle = FindMissionVehicle())
         {
             bHasLocation = true;
             return Vehicle->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f);
@@ -254,7 +254,7 @@ void UOWMissionComponent::EvaluateCurrentObjective()
     switch (Objective.Type)
     {
     case EOWMissionObjectiveType::ReachVehicle:
-        if (AOWPrototypeVehicle* Vehicle = FindPrototypeVehicle())
+        if (APawn* Vehicle = FindMissionVehicle())
         {
             if (FVector::Dist2D(
                 PlayerPawn->GetActorLocation(),
@@ -266,14 +266,14 @@ void UOWMissionComponent::EvaluateCurrentObjective()
         break;
 
     case EOWMissionObjectiveType::EnterVehicle:
-        if (Cast<AOWPrototypeVehicle>(PlayerPawn))
+        if (PlayerController->IsDrivingMissionVehicle())
         {
             AdvanceObjective();
         }
         break;
 
     case EOWMissionObjectiveType::ReachLocation:
-        if (Cast<AOWPrototypeVehicle>(PlayerPawn) &&
+        if (PlayerController->IsDrivingMissionVehicle() &&
             FVector::Dist2D(
                 PlayerPawn->GetActorLocation(),
                 Objective.TargetLocation) <= Objective.AcceptanceRadius)
