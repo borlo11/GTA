@@ -97,8 +97,8 @@ def main():
     require(len(pads) >= 28, "expected outer district block pads")
     require(len(hero_prefabs) >= 12, "expected twelve authored outer hero/infill prefabs")
     require(
-        len(background_buildings) >= 50,
-        "expected Phase C clustered district buildings",
+        len(background_buildings) >= 28,
+        "expected remaining clustered background buildings after authored infill",
     )
     require(len(lane_graphics) >= 150, "expected expanded road graphics")
     require(len(parking_marks) >= 18, "expected visible parking detail")
@@ -116,12 +116,12 @@ def main():
         "expected three industrial loading docks",
     )
     require(
-        len(facade_details) >= 45,
-        "expected facade cues on background massing",
+        len(facade_details) >= 28,
+        "expected facade cues on remaining background massing",
     )
     require(
-        len(roof_details) >= 45,
-        "expected rooftop silhouette detail",
+        len(roof_details) >= 28,
+        "expected rooftop silhouette detail on remaining massing",
     )
     require(
         len(secondary_parking) >= 30,
@@ -140,8 +140,8 @@ def main():
         "expected three stepped lightweight skyline landmarks",
     )
     require(
-        len(authored_facades) >= 35,
-        "expected real UNIBLOCKS facade parts on procedural buildings",
+        len(authored_facades) >= 24,
+        "expected real UNIBLOCKS facade parts on remaining procedural buildings",
     )
     require(
         len(authored_skyline) >= 9,
