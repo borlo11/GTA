@@ -30,6 +30,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Vehicle")
     TObjectPtr<UBoxComponent> InteractionCollision;
 
-    UPROPERTY(Transient)
+    // Persist the linked vehicle in the map. The M10 bootstrap creates this
+    // relationship in editor/commandlet mode, so marking it Transient would
+    // discard the reference as soon as OW_LightweightCity is saved/reloaded.
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Vehicle")
     TObjectPtr<APawn> VehiclePawn;
 };
