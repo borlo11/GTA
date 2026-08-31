@@ -1,5 +1,6 @@
 #include "OWMissionMarker.h"
 
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
@@ -13,12 +14,12 @@ AOWMissionMarker::AOWMissionMarker()
     SetRootComponent(MarkerMesh);
     MarkerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     MarkerMesh->SetGenerateOverlapEvents(false);
-    MarkerMesh->SetRelativeScale3D(FVector(0.34f, 0.34f, 0.34f));
+    MarkerMesh->SetRelativeScale3D(FVector(1.25f, 1.25f, 0.10f));
 
-    if (UStaticMesh* Sphere =
-        LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+    if (UStaticMesh* Cylinder =
+        LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
     {
-        MarkerMesh->SetStaticMesh(Sphere);
+        MarkerMesh->SetStaticMesh(Cylinder);
     }
 
     MarkerText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("MarkerText"));
@@ -28,6 +29,14 @@ AOWMissionMarker::AOWMissionMarker()
     MarkerText->SetWorldSize(32.0f);
     MarkerText->SetTextRenderColor(FColor(255, 210, 40));
     MarkerText->SetText(FText::FromString(TEXT("MISSIONE")));
+
+    MarkerLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("MarkerLight"));
+    MarkerLight->SetupAttachment(RootComponent);
+    MarkerLight->SetRelativeLocation(FVector(0.0f, 0.0f, 55.0f));
+    MarkerLight->SetLightColor(FLinearColor(1.0f, 0.72f, 0.12f, 1.0f));
+    MarkerLight->SetIntensity(650.0f);
+    MarkerLight->SetAttenuationRadius(360.0f);
+    MarkerLight->SetCastShadows(false);
 }
 
 void AOWMissionMarker::SetMarkerLocation(const FVector& WorldLocation)

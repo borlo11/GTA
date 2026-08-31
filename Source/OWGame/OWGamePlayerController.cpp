@@ -54,6 +54,12 @@ void AOWGamePlayerController::SetupInputComponent()
             IE_Pressed,
             this,
             &AOWGamePlayerController::DebugResetMission);
+
+        InputComponent->BindKey(
+            EKeys::F9,
+            IE_Pressed,
+            this,
+            &AOWGamePlayerController::TogglePerformanceOverlay);
     }
 #endif
 }
@@ -93,6 +99,11 @@ void AOWGamePlayerController::DebugResetMission()
     {
         MissionComponent->ResetMission(true);
     }
+}
+
+void AOWGamePlayerController::TogglePerformanceOverlay()
+{
+    bShowPerformanceOverlay = !bShowPerformanceOverlay;
 }
 
 void AOWGamePlayerController::ApplyGameplayInputMode()

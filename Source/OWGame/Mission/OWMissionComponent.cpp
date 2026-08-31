@@ -101,6 +101,7 @@ void UOWMissionComponent::ResetMission(bool bDeleteSave)
     CurrentObjectiveIndex = INDEX_NONE;
     FailureReason = FText::GetEmpty();
     CachedObjectiveDistance = -1.0f;
+    CompletionBannerEndWorldTime = -1.0;
 
     DestroyMarker();
 
@@ -122,6 +123,7 @@ void UOWMissionComponent::FailMission(const FText& Reason)
     MissionState = EOWMissionState::Failed;
     FailureReason = Reason;
     CachedObjectiveDistance = -1.0f;
+    CompletionBannerEndWorldTime = -1.0;
     DestroyMarker();
     SaveMissionProgress();
 
@@ -327,6 +329,13 @@ void UOWMissionComponent::CompleteMission()
     MissionState = EOWMissionState::Completed;
     CurrentObjectiveIndex = Objectives.Num();
     CachedObjectiveDistance = -1.0f;
+
+    if (const UWorld* World = GetWorld())
+    {
+        CompletionBannerEndWorldTime =
+            World->GetTimeSeconds() + CompletionBannerSeconds;
+    }
+
     DestroyMarker();
     SaveMissionProgress();
 
@@ -496,4 +505,15 @@ void UOWMissionComponent::LoadMissionProgress()
         *MissionId.ToString(),
         static_cast<int32>(MissionState),
         CurrentObjectiveIndex);
+}
+
+
+bool UOWMissionComponent::ShouldShowCompletionBanner() const
+{
+    const UWorld* World = GetWorld();
+
+    return MissionState == EOWMissionState::Completed &&
+        World &&
+        CompletionBannerEndWorldTime >= 0.0 &&
+        World->GetTimeSeconds() <= CompletionBannerEndWorldTime;
 }
