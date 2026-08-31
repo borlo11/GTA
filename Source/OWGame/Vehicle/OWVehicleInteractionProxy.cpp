@@ -51,8 +51,7 @@ bool AOWVehicleInteractionProxy::CanInteract_Implementation(AActor* Interactor) 
 
     return IsValid(Character) &&
         IsValid(Character->GetController()) &&
-        IsValid(VehiclePawn) &&
-        VehiclePawn->GetController() == nullptr;
+        IsValid(VehiclePawn);
 }
 
 FText AOWVehicleInteractionProxy::GetInteractionPrompt_Implementation(AActor* Interactor) const
