@@ -139,6 +139,14 @@ def spawn_mesh(name, mesh_path, location, scale, material=None, collision=True):
     )
     label(actor, name)
 
+    try:
+        actor.set_editor_property(
+            "tags",
+            [unreal.Name("OWNoPopulationSpawn")],
+        )
+    except Exception:
+        pass
+
     comp = actor.static_mesh_component
     comp.set_mobility(unreal.ComponentMobility.STATIC)
     comp.set_static_mesh(mesh)
