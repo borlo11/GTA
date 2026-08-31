@@ -15,9 +15,8 @@ PREFIX = "OW_CITY_"
 UNIBLOCKS_ROOT = "/Game/Uniblocks"
 
 PREFAB_WORLDS = (
+    "/Game/Uniblocks/Maps/LI_prefab_Art_house_elevated_v1",
     "/Game/Uniblocks/Maps/LI_prefab_Classic_house_v1",
-    "/Game/Uniblocks/Maps/LI_prefab_Futuristic_cabin_v1",
-    "/Game/Uniblocks/Maps/LI_prefab_Modern_house2_v1",
 )
 
 CUBE = "/Engine/BasicShapes/Cube.Cube"
@@ -441,18 +440,16 @@ def spawn_background_building(name, x, y, sx, sy, sz, material):
 
 def build_prefab_district(mats):
     # M9.4 performance composition:
-    # six authored hero buildings on the playable Hot Run corridor,
-    # two open plazas, and eight low-cost background masses.
+    # four authored hero buildings on the playable Hot Run corridor,
+    # two open plazas, and lightweight background masses.
     #
     # This cuts thousands of repeated prefab actors while keeping the player's
     # immediate route architectural rather than blockout-only.
     hero_lots = {
-        (1, 0): (0, 0.0, 0.0, 0.0),
-        (1, 1): (2, 120.0, -90.0, 180.0),
-        (1, 2): (1, -120.0, 90.0, 0.0),
-        (2, 1): (0, 80.0, 120.0, 180.0),
-        (2, 2): (2, -100.0, -100.0, 0.0),
-        (2, 3): (1, 100.0, 80.0, 180.0),
+        (1, 1): (0, 0.0, 0.0, 0.0),
+        (1, 2): (1, 0.0, 0.0, 180.0),
+        (2, 1): (1, 0.0, 0.0, 0.0),
+        (2, 2): (0, 0.0, 0.0, 180.0),
     }
 
     plaza_lots = {(0, 3), (3, 0)}
@@ -502,7 +499,7 @@ def build_prefab_district(mats):
             background_index += 1
 
     log(
-        "M9: district composition hero_prefabs={} background_masses={}".format(
+        "M9: optimized district hero_prefabs={} background_masses={}".format(
             hero_index,
             background_index,
         )
@@ -711,45 +708,12 @@ def setup_lighting():
 
     try:
         component = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-        component.set_editor_property("fog_density", 0.003)
+        component.set_editor_property("fog_density", 0.0022)
         component.set_editor_property("fog_height_falloff", 0.30)
     except Exception:
         pass
 
-    try:
-        cloud = subsystem.spawn_actor_from_class(
-            unreal.VolumetricCloud,
-            unreal.Vector(0.0, 0.0, 0.0),
-            unreal.Rotator(0.0, 0.0, 0.0),
-        )
-        set_label(cloud, PREFIX + "VolumetricCloud")
-
-        cloud_component = cloud.get_component_by_class(unreal.VolumetricCloudComponent)
-        if cloud_component:
-            try:
-                cloud_component.set_editor_property("view_sample_count_scale", 0.55)
-            except Exception:
-                pass
-            try:
-                cloud_component.set_editor_property("shadow_view_sample_count_scale", 0.35)
-            except Exception:
-                pass
-            try:
-                cloud_component.set_editor_property(
-                    "reflection_view_sample_count_scale_value",
-                    0.35,
-                )
-            except Exception:
-                pass
-            try:
-                cloud_component.set_editor_property(
-                    "shadow_reflection_view_sample_count_scale_value",
-                    0.25,
-                )
-            except Exception:
-                pass
-    except Exception:
-        pass
+    log("M9: volumetric clouds disabled for 60 FPS daytime target")
 
 
 def setup_gameplay():
