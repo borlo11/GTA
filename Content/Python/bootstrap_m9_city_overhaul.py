@@ -15,7 +15,6 @@ PREFIX = "OW_CITY_"
 UNIBLOCKS_ROOT = "/Game/Uniblocks"
 
 PREFAB_WORLDS = (
-    "/Game/Uniblocks/Maps/LI_prefab_Art_house_elevated_v1",
     "/Game/Uniblocks/Maps/LI_prefab_Classic_house_v1",
     "/Game/Uniblocks/Maps/LI_prefab_Futuristic_cabin_v1",
     "/Game/Uniblocks/Maps/LI_prefab_Modern_house2_v1",
@@ -49,6 +48,14 @@ DARK_MATERIAL_NAMES = (
     "MI_UBT_concreteSmooth_dark",
     "MI_UBT_concreteRaw_gray_plain",
 )
+
+BACKGROUND_BUILDING_MATERIAL_NAMES = (
+    "MI_UBT_brickwork_white",
+    "MI_UBT_concreteRaw_gray_plain",
+    "MI_UBT_concreteSmooth_gray",
+)
+
+UNIBLOCKS_BACKGROUND_MESH = "SM_UB_Block_scalable"
 
 log = unreal.log
 warn = unreal.log_warning
@@ -190,11 +197,18 @@ def cylinder(name, location, diameter, height, material=None, collision=False):
 
 def load_materials():
     root = "/Game/Uniblocks/Materials"
+    background_materials = [
+        find_asset(root, name)
+        for name in BACKGROUND_BUILDING_MATERIAL_NAMES
+    ]
+    background_materials = [material for material in background_materials if material]
+
     return {
         "road": first_asset(root, ROAD_MATERIAL_NAMES),
         "sidewalk": first_asset(root, SIDEWALK_MATERIAL_NAMES),
         "marking": first_asset(root, MARKING_MATERIAL_NAMES),
         "dark": first_asset(root, DARK_MATERIAL_NAMES),
+        "background": background_materials,
     }
 
 
@@ -222,7 +236,7 @@ def spawn_prefab(name, world_path, location, yaw):
     instance = actor_subsystem().spawn_actor_from_class(
         unreal.LevelInstance,
         location,
-        unreal.Rotator(0.0, yaw, 0.0),
+        unreal.Rotator(pitch=0.0, yaw=yaw, roll=0.0),
     )
     if not instance:
         raise RuntimeError("M9: failed to spawn LevelInstance for {}".format(world_path))
@@ -371,19 +385,82 @@ def add_road_markings(mats):
             )
 
 
-def build_prefab_district(mats):
-    # Two intentionally open corner plazas keep sightlines and mission driving readable.
-    plaza_lots = {(0, 3), (3, 0)}
+def mesh_dimensions(mesh):
+    box = mesh.get_bounding_box()
+    minimum = box.min
+    maximum = box.max
 
-    # Slight offsets/rotations break repetition while leaving each authored prefab at 1:1 scale.
-    offsets = (
-        (0.0, 0.0, 0.0),
-        (170.0, -120.0, 90.0),
-        (-140.0, 120.0, 180.0),
-        (110.0, 150.0, 270.0),
+    return (
+        unreal.Vector(
+            max(1.0, maximum.x - minimum.x),
+            max(1.0, maximum.y - minimum.y),
+            max(1.0, maximum.z - minimum.z),
+        ),
+        minimum,
+        maximum,
     )
 
-    prefab_index = 0
+
+def spawn_background_building(name, x, y, sx, sy, sz, material):
+    mesh = find_asset(UNIBLOCKS_ROOT, UNIBLOCKS_BACKGROUND_MESH)
+    if not mesh:
+        return None
+
+    dimensions, minimum, maximum = mesh_dimensions(mesh)
+    scale = unreal.Vector(
+        sx / dimensions.x,
+        sy / dimensions.y,
+        sz / dimensions.z,
+    )
+
+    local_center_x = (minimum.x + maximum.x) * 0.5
+    local_center_y = (minimum.y + maximum.y) * 0.5
+
+    location = unreal.Vector(
+        x - local_center_x * scale.x,
+        y - local_center_y * scale.y,
+        LOT_HEIGHT - minimum.z * scale.z,
+    )
+
+    actor = actor_subsystem().spawn_actor_from_class(
+        unreal.StaticMeshActor,
+        location,
+        unreal.Rotator(pitch=0.0, yaw=0.0, roll=0.0),
+    )
+    set_label(actor, name)
+    set_tags(actor, "OWNoPopulationSpawn")
+
+    component = actor.static_mesh_component
+    component.set_mobility(unreal.ComponentMobility.STATIC)
+    component.set_static_mesh(mesh)
+    if material:
+        component.set_material(0, material)
+
+    actor.set_actor_scale3d(scale)
+    return actor
+
+
+def build_prefab_district(mats):
+    # M9.4 performance composition:
+    # six authored hero buildings on the playable Hot Run corridor,
+    # two open plazas, and eight low-cost background masses.
+    #
+    # This cuts thousands of repeated prefab actors while keeping the player's
+    # immediate route architectural rather than blockout-only.
+    hero_lots = {
+        (1, 0): (0, 0.0, 0.0, 0.0),
+        (1, 1): (2, 120.0, -90.0, 180.0),
+        (1, 2): (1, -120.0, 90.0, 0.0),
+        (2, 1): (0, 80.0, 120.0, 180.0),
+        (2, 2): (2, -100.0, -100.0, 0.0),
+        (2, 3): (1, 100.0, 80.0, 180.0),
+    }
+
+    plaza_lots = {(0, 3), (3, 0)}
+    background_materials = mats["background"] or [mats["sidewalk"]]
+
+    hero_index = 0
+    background_index = 0
 
     for ix, x in enumerate(BLOCK_CENTERS):
         for iy, y in enumerate(BLOCK_CENTERS):
@@ -391,18 +468,46 @@ def build_prefab_district(mats):
                 build_plaza(ix, iy, x, y, mats)
                 continue
 
-            world_path = PREFAB_WORLDS[prefab_index % len(PREFAB_WORLDS)]
-            ox, oy, yaw = offsets[(ix + iy + prefab_index) % len(offsets)]
+            hero = hero_lots.get((ix, iy))
+            if hero:
+                prefab_variant, ox, oy, yaw = hero
+                world_path = PREFAB_WORLDS[prefab_variant % len(PREFAB_WORLDS)]
 
-            spawn_prefab(
-                PREFIX + "Building_{:02d}_Prefab".format(prefab_index + 1),
-                world_path,
-                unreal.Vector(x + ox, y + oy, LOT_HEIGHT),
-                yaw,
+                spawn_prefab(
+                    PREFIX + "Building_{:02d}_HeroPrefab".format(hero_index + 1),
+                    world_path,
+                    unreal.Vector(x + ox, y + oy, LOT_HEIGHT),
+                    yaw,
+                )
+                hero_index += 1
+                continue
+
+            material = background_materials[
+                background_index % len(background_materials)
+            ]
+
+            # Conservative background scale: urban silhouette, not a giant tower.
+            height = 720.0 + (background_index % 3) * 180.0
+            width_x = 1450.0 + (background_index % 2) * 220.0
+            width_y = 1350.0 + ((background_index + 1) % 2) * 240.0
+
+            spawn_background_building(
+                PREFIX + "Building_{:02d}_Background".format(background_index + 1),
+                x,
+                y,
+                width_x,
+                width_y,
+                height,
+                material,
             )
+            background_index += 1
 
-            prefab_index += 1
-
+    log(
+        "M9: district composition hero_prefabs={} background_masses={}".format(
+            hero_index,
+            background_index,
+        )
+    )
 
 def build_plaza(ix, iy, x, y, mats):
     dark = mats["dark"] or mats["sidewalk"]
@@ -464,16 +569,20 @@ def add_street_furniture(mats):
         )
 
 
-def optimize_prefab_local_lights():
-    # Authored prefab houses include many decorative local lights intended for
-    # close-up showcase scenes. In a repeated open-world district they can
-    # overlap heavily, trigger the VSM one-pass-projection warning, and push
-    # frame time over the M8 budget. Keep the lights, but make their shadows
-    # non-authoritative; the movable sun remains the primary shadow source.
-    optimized_components = 0
+def optimize_prefab_runtime_cost():
+    # The UNIBLOCKS prefab Worlds are showcase assets containing many Blueprint
+    # actors, door logic, decorative lights and component ticks. Repeating them
+    # verbatim is too expensive for the current open-world target.
+    #
+    # M9 is a daytime slice: local prefab lights are disabled completely and
+    # actors/components inside non-persistent LevelInstance levels are frozen.
+    world = unreal.get_editor_subsystem(
+        unreal.UnrealEditorSubsystem
+    ).get_editor_world()
+
+    persistent_level = world.get_editor_property("persistent_level") if world else None
 
     local_light_component_classes = []
-
     for class_name in (
         "PointLightComponent",
         "SpotLightComponent",
@@ -482,6 +591,10 @@ def optimize_prefab_local_lights():
         cls = getattr(unreal, class_name, None)
         if cls:
             local_light_component_classes.append(cls)
+
+    disabled_lights = 0
+    frozen_actors = 0
+    frozen_components = 0
 
     for actor in actor_subsystem().get_all_level_actors():
         if not actor:
@@ -498,24 +611,56 @@ def optimize_prefab_local_lights():
                     continue
 
                 try:
-                    component.set_editor_property("cast_shadows", False)
+                    component.set_visibility(False, True)
                 except Exception:
                     pass
 
                 try:
-                    component.set_editor_property("cast_volumetric_shadow", False)
+                    component.set_editor_property("intensity", 0.0)
                 except Exception:
                     pass
 
-                optimized_components += 1
+                try:
+                    component.set_editor_property("cast_shadows", False)
+                except Exception:
+                    pass
+
+                disabled_lights += 1
+
+        try:
+            actor_level = actor.get_level()
+        except Exception:
+            actor_level = None
+
+        if persistent_level and actor_level and actor_level != persistent_level:
+            try:
+                actor.set_actor_tick_enabled(False)
+                frozen_actors += 1
+            except Exception:
+                pass
+
+            try:
+                components = actor.get_components_by_class(unreal.ActorComponent)
+            except Exception:
+                components = []
+
+            for component in components:
+                try:
+                    component.set_component_tick_enabled(False)
+                    frozen_components += 1
+                except Exception:
+                    pass
 
     log(
-        "M9: optimized {} local prefab light components for open-world VSM budget".format(
-            optimized_components
+        "M9: runtime cost optimized lights={} prefab_actors={} prefab_components={}".format(
+            disabled_lights,
+            frozen_actors,
+            frozen_components,
         )
     )
 
 
+def setup_lighting():
 def setup_lighting():
     subsystem = actor_subsystem()
 
@@ -633,7 +778,7 @@ def main():
     add_road_markings(mats)
     build_prefab_district(mats)
     add_street_furniture(mats)
-    optimize_prefab_local_lights()
+    optimize_prefab_runtime_cost()
     setup_lighting()
     setup_gameplay()
 
