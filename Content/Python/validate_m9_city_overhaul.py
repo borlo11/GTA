@@ -79,7 +79,7 @@ def main():
         "prefab variety too low: {}".format(sorted(world_assets)),
     )
 
-    world = unreal.EditorLevelLibrary.get_editor_world()
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     settings = world.get_world_settings() if world else None
     require(settings is not None, "WorldSettings unavailable")
 
