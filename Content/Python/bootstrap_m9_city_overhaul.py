@@ -604,7 +604,17 @@ def setup_gameplay():
 
 
 def save_level():
-    unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
+    # Save explicitly and fail the bootstrap if Windows/another Unreal process
+    # is locking the .umap. This prevents a misleading ALL CHECKS PASSED line
+    # when SavePackage could not actually write the city.
+    saved = unreal.EditorAssetLibrary.save_asset(TARGET_MAP, only_if_is_dirty=False)
+    if not saved:
+        raise RuntimeError(
+            "M9: failed to save {}. Close every Unreal Editor instance/process and rerun.".format(
+                TARGET_MAP
+            )
+        )
+
     log("M9: saved {}".format(TARGET_MAP))
 
 
