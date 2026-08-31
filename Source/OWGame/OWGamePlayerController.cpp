@@ -4,8 +4,10 @@
 #include "OWGameCharacter.h"
 #include "Crime/OWWantedComponent.h"
 #include "Mission/OWMissionComponent.h"
+#include "Vehicle/OWVehicleInteractionProxy.h"
 
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "EngineUtils.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
@@ -160,10 +162,20 @@ bool AOWGamePlayerController::EnterChaosVehicle(
 {
     if (!IsValid(VehiclePawn) ||
         !IsValid(DriverCharacter) ||
-        ActiveVehiclePawn ||
-        VehiclePawn->GetController())
+        ActiveVehiclePawn)
     {
         return false;
+    }
+
+    // A migrated template pawn may arrive with a controller depending on its
+    // Blueprint defaults. OWGame owns possession while driving, so release any
+    // previous controller instead of treating that as a failed interaction.
+    if (AController* ExistingController = VehiclePawn->GetController())
+    {
+        if (ExistingController != this)
+        {
+            ExistingController->UnPossess();
+        }
     }
 
     UChaosWheeledVehicleMovementComponent* Movement =
@@ -453,6 +465,61 @@ void AOWGamePlayerController::VehicleExitPressed()
     if (IsDrivingChaosVehicle())
     {
         ExitChaosVehicle();
+        return;
+    }
+
+    // Robust on-foot vehicle entry: do not depend on the camera visibility
+    // sweep hitting an invisible proxy before the SportsCar's own collision.
+    // Pressing E near a vehicle always chooses the closest linked M10 proxy.
+    AOWGameCharacter* DriverCharacter = Cast<AOWGameCharacter>(GetPawn());
+    UWorld* World = GetWorld();
+    if (!DriverCharacter || !World)
+    {
+        return;
+    }
+
+    constexpr float EnterRadius = 500.0f;
+    const float EnterRadiusSq = FMath::Square(EnterRadius);
+
+    AOWVehicleInteractionProxy* BestProxy = nullptr;
+    float BestDistanceSq = EnterRadiusSq;
+
+    for (TActorIterator<AOWVehicleInteractionProxy> It(World); It; ++It)
+    {
+        AOWVehicleInteractionProxy* Proxy = *It;
+        if (!IsValid(Proxy) || !IsValid(Proxy->GetVehiclePawn()))
+        {
+            continue;
+        }
+
+        const float DistanceSq = FVector::DistSquared(
+            DriverCharacter->GetActorLocation(),
+            Proxy->GetVehiclePawn()->GetActorLocation());
+
+        if (DistanceSq <= BestDistanceSq)
+        {
+            BestDistanceSq = DistanceSq;
+            BestProxy = Proxy;
+        }
+    }
+
+    if (!BestProxy)
+    {
+        UE_LOG(
+            LogOWGame,
+            Verbose,
+            TEXT("Vehicle enter pressed but no Chaos vehicle was within %.0f cm."),
+            EnterRadius);
+        return;
+    }
+
+    if (!EnterChaosVehicle(BestProxy->GetVehiclePawn(), DriverCharacter))
+    {
+        UE_LOG(
+            LogOWGame,
+            Warning,
+            TEXT("Direct proximity entry failed for Chaos vehicle %s."),
+            *GetNameSafe(BestProxy->GetVehiclePawn()));
     }
 }
 
