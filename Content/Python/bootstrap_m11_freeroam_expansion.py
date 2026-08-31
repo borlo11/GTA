@@ -460,17 +460,17 @@ def build_hero_prefabs():
 
 def build_background_districts(mats):
     """
-    Phase C massing pass.
+    Phase C.1 grounded massing pass.
 
-    The first M11 layout used one large scaled block per lot. That was cheap
-    but visually read as giant white placeholder cubes. Replace those with
-    smaller clustered masses that sit closer to believable building scale and
-    leave visible setbacks from the roads.
+    Do not use SM_UB_Block_scalable for district massing. Its authored pivot /
+    bounds are not guaranteed to be centered, which can make scaled buildings
+    appear as huge floating boxes in the free-roam map.
+
+    Use the engine Cube for all cheap background architecture instead. Cube
+    dimensions are deterministic, so every mass can be placed directly on the
+    district pad with a known ground contact while the authored UNIBLOCKS
+    LevelInstances remain the hero architecture.
     """
-    mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Block_scalable")
-    if not mesh:
-        raise RuntimeError("M11: SM_UB_Block_scalable missing")
-
     backgrounds = mats["background"] or [mats["sidewalk"]]
     hero_lots = {
         (-30000.0, 30000.0),
@@ -480,6 +480,7 @@ def build_background_districts(mats):
     }
 
     count = 0
+    pad_top_z = 10.0
 
     for x in BLOCK_CENTERS:
         for y in BLOCK_CENTERS:
@@ -490,62 +491,56 @@ def build_background_districts(mats):
 
             district = district_for(x, y)
 
-            # South-east remains open as park / civic / parking space.
+            # South-east stays intentionally open as park / civic / parking.
             if district == "ParkEdge":
                 continue
 
-            local = []
-
             if district == "Residential":
-                # Three low volumes rather than one slab. The varying offsets
-                # create front/side yards and keep streets from feeling walled-in.
                 local = (
-                    (-2300.0, -1700.0, 2100.0, 1700.0, 620.0, 0.0),
-                    (1700.0, -900.0, 1800.0, 1500.0, 760.0, 90.0),
-                    (300.0, 2100.0, 2200.0, 1500.0, 680.0, 0.0),
+                    (-2200.0, -1650.0, 1900.0, 1500.0, 580.0, 0.0),
+                    (1650.0, -850.0, 1650.0, 1400.0, 720.0, 90.0),
+                    (250.0, 2050.0, 2050.0, 1400.0, 640.0, 0.0),
                 )
             elif district == "Modern":
-                # Slender mid-rise pair + a low podium. Heights stay well below
-                # the old giant placeholder blocks.
                 local = (
-                    (-1900.0, -1100.0, 1800.0, 1700.0, 1450.0, 0.0),
-                    (1800.0, 1200.0, 1700.0, 1850.0, 1750.0, 90.0),
-                    (-300.0, 2350.0, 3000.0, 1050.0, 520.0, 0.0),
+                    (-1850.0, -1100.0, 1650.0, 1550.0, 1150.0, 0.0),
+                    (1750.0, 1150.0, 1550.0, 1650.0, 1380.0, 90.0),
+                    (-250.0, 2250.0, 2700.0, 950.0, 460.0, 0.0),
                 )
             else:
-                # Industrial district: two long low warehouses with a service
-                # gap between them. This gives the car actual streetscape depth.
                 local = (
-                    (-1900.0, -1600.0, 3600.0, 2200.0, 720.0, 0.0),
-                    (2100.0, 1500.0, 3300.0, 2000.0, 820.0, 90.0),
+                    (-1850.0, -1500.0, 3300.0, 1950.0, 620.0, 0.0),
+                    (1950.0, 1450.0, 3000.0, 1850.0, 700.0, 90.0),
                 )
 
             for part_index, (ox, oy, sx, sy, sz, yaw) in enumerate(local):
                 material = backgrounds[(count + part_index) % len(backgrounds)]
 
-                actor = spawn_mesh_sized(
+                # Engine Cube pivot is centered, so z = pad top + half height
+                # guarantees that the building sits on the pad instead of
+                # floating above it.
+                actor = cube(
                     PREFIX + "{}_Background_{:03d}".format(district, count),
-                    mesh,
                     unreal.Vector(
                         x + ox,
                         y + oy,
-                        12.0 + sz * 0.5,
+                        pad_top_z + sz * 0.5,
                     ),
                     unreal.Vector(sx, sy, sz),
                     material,
                     True,
+                    False,
                     yaw,
                 )
 
                 if not actor:
                     raise RuntimeError(
-                        "M11: failed district background actor {}".format(count)
+                        "M11: failed grounded background actor {}".format(count)
                     )
 
                 count += 1
 
-    log("M11: Phase C clustered district buildings={}".format(count))
-
+    log("M11: Phase C.1 grounded district buildings={}".format(count))
 
 def build_phase_c_landscaping(mats):
     """
