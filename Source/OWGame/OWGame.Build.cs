@@ -12,7 +12,8 @@ public class OWGame : ModuleRules
             "CoreUObject",
             "Engine",
             "InputCore",
-            "EnhancedInput"
+            "EnhancedInput",
+            "ChaosVehicles"
         });
     }
 }
