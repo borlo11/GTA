@@ -177,3 +177,21 @@ The first pass adds:
 - sparse outer street lights.
 
 This is a layout-and-silhouette pass, not the final art pass. Phase C will replace the weakest placeholder/background architecture with better combinations from the local visual inventory after the expanded driving routes are accepted.
+
+
+## Phase C — environment readability pass
+
+The first free-roam screenshots showed the expanded road network working, but the single-volume background architecture still read as oversized placeholder slabs.
+
+Phase C therefore changes the environment strategy without increasing authored LevelInstance density:
+
+- one giant block per background lot is removed;
+- Residential lots become three low staggered volumes with visible setbacks;
+- Modern lots become two slender mid-rise masses plus a low podium;
+- Industrial lots become paired low warehouses with a service gap;
+- heights are capped far below the previous slab-like silhouettes;
+- sparse confirmed UNIBLOCKS bush meshes add residential/modern landscaping;
+- thin non-colliding boulevard edge bands improve road hierarchy;
+- existing M9/M10 gameplay, M11 road layout, hero prefabs, industrial dressing, park/parking areas, and 60 FPS intent remain preserved.
+
+This is still a procedural staging pass, but it deliberately removes the most obvious "giant white cube" failure mode before deeper art-direction work.
