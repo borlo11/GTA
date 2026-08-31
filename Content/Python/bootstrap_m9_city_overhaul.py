@@ -632,7 +632,6 @@ def optimize_prefab_runtime_cost():
 
 
 def setup_lighting():
-def setup_lighting():
     subsystem = actor_subsystem()
 
     sun = subsystem.spawn_actor_from_class(
