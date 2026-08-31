@@ -59,6 +59,19 @@ UNIBLOCKS FREE remains a local Fab dependency.
 
 The repository does not add or redistribute the source pack. The M9 generator references material/mesh names already expected from the local pack and uses engine primitive meshes for lightweight detailing.
 
+## UE 5.8 Lumen performance profile
+
+The authored prefab pass exposed the cost of thousands of overlapping modular instances on the current development GPU. M9 therefore adopts Unreal Engine 5.8's lower-cost Lumen path for this prototype target:
+
+- Lumen GI remains enabled.
+- Software tracing uses the Global Distance Field instead of per-mesh detail tracing.
+- Global Illumination scalability defaults to Medium.
+- Reflection scalability defaults to Medium, which uses the UE 5.8 Lumen Lite path / screen-space reflections for smooth surfaces.
+- The movable sun remains the authoritative shadow caster.
+- Repeated prefab local lights keep their emissive/lighting contribution but do not all cast Virtual Shadow Map shadows.
+
+This is a deliberate 60 FPS baseline for the current project hardware, not a permanent cap on a future high-end quality preset.
+
 ## Performance discipline
 
 M8 demonstrated substantial headroom on the development machine before this pass.
