@@ -2,140 +2,144 @@
 # M10 vehicle-asset audit for Unreal Engine 5.8.
 #
 # This script does not modify project content. It inspects the mounted Asset
-# Registry and reports skeletal meshes / physics assets / likely vehicle
-# blueprints that could support a Chaos Vehicles implementation.
+# Registry and reports every SkeletalMesh / PhysicsAsset plus only genuinely
+# vehicle-like Blueprints. That keeps the audit useful even when the project
+# contains many unrelated Blueprints.
 
 import os
 import unreal
 
 REPORT_NAME = "M10_VehicleAssetCandidates.txt"
 
-POSITIVE_TERMS = {
-    "vehicle": 40,
-    "car": 40,
-    "sedan": 36,
-    "coupe": 32,
-    "sports": 24,
-    "sport": 20,
-    "supercar": 32,
-    "muscle": 24,
-    "suv": 26,
-    "truck": 24,
-    "pickup": 24,
-    "buggy": 22,
-    "hatch": 20,
-    "chassis": 16,
-    "wheel": 10,
-    "tire": 8,
-    "tyre": 8,
-}
-
-NEGATIVE_TERMS = (
-    "manny",
-    "quinn",
-    "mannequin",
-    "metahuman",
-    "character",
-    "humanoid",
+VEHICLE_TERMS = (
+    "vehicle",
+    "car",
+    "sedan",
+    "coupe",
+    "sports",
+    "sport",
+    "supercar",
+    "muscle",
+    "suv",
+    "truck",
+    "pickup",
+    "buggy",
+    "hatch",
+    "chassis",
+    "wheel",
+    "tire",
+    "tyre",
 )
 
-CLASS_BONUS = {
-    "skeletalmesh": 30,
-    "physicsasset": 20,
-    "blueprint": 8,
-    "animblueprint": 5,
-}
 
-
-def score_asset(data):
-    package = str(data.package_name)
-    name = str(data.asset_name)
-    class_path = str(data.asset_class_path)
-    haystack = "{} {} {}".format(package, name, class_path).lower()
-
-    if any(term in haystack for term in NEGATIVE_TERMS):
-        return -1
-
-    score = 0
-
-    for term, points in POSITIVE_TERMS.items():
-        if term in haystack:
-            score += points
-
-    class_lower = class_path.lower()
-    for class_name, points in CLASS_BONUS.items():
-        if class_name in class_lower:
-            score += points
-            break
-
-    # Prefer project/plugin content over generic engine assets when two
-    # candidates otherwise score similarly.
-    if package.startswith("/Game/"):
-        score += 16
-    elif not package.startswith("/Engine/"):
-        score += 8
-
-    return score
+def has_vehicle_term(*parts):
+    haystack = " ".join(str(part) for part in parts).lower()
+    return any(term in haystack for term in VEHICLE_TERMS)
 
 
 def main():
     registry = unreal.AssetRegistryHelpers.get_asset_registry()
-
-    # get_all_assets is deliberate here: mounted Fab/plugin content can live
-    # outside /Game, and M10 needs to know whether a usable car already exists.
     assets = registry.get_all_assets() or []
 
-    candidates = []
-    skeletal_meshes = 0
-    physics_assets = 0
+    skeletal_meshes = []
+    physics_assets = []
+    vehicle_blueprints = []
 
     for data in assets:
+        package = str(data.package_name)
+        name = str(data.asset_name)
         class_path = str(data.asset_class_path).lower()
 
+        row = (package, name, str(data.asset_class_path))
+
         if "skeletalmesh" in class_path:
-            skeletal_meshes += 1
-        elif "physicsasset" in class_path:
-            physics_assets += 1
-        elif "blueprint" not in class_path:
+            skeletal_meshes.append(row)
             continue
 
-        score = score_asset(data)
-        if score <= 0:
+        if "physicsasset" in class_path:
+            physics_assets.append(row)
             continue
 
-        candidates.append(
-            (
-                score,
-                str(data.package_name),
-                str(data.asset_name),
-                str(data.asset_class_path),
-            )
-        )
+        if "blueprint" in class_path and has_vehicle_term(package, name):
+            vehicle_blueprints.append(row)
 
-    candidates.sort(key=lambda row: (-row[0], row[1]))
+    skeletal_meshes.sort(key=lambda row: row[0])
+    physics_assets.sort(key=lambda row: row[0])
+    vehicle_blueprints.sort(key=lambda row: row[0])
 
     lines = [
         "M10_DISCOVERY: asset_registry_total={}".format(len(assets)),
-        "M10_DISCOVERY: skeletal_meshes={}".format(skeletal_meshes),
-        "M10_DISCOVERY: physics_assets={}".format(physics_assets),
-        "M10_DISCOVERY: scored_candidates={}".format(len(candidates)),
+        "M10_DISCOVERY: skeletal_meshes={}".format(len(skeletal_meshes)),
+        "M10_DISCOVERY: physics_assets={}".format(len(physics_assets)),
+        "M10_DISCOVERY: vehicle_blueprints={}".format(len(vehicle_blueprints)),
+        "",
+        "=== ALL SKELETAL MESHES ===",
     ]
 
-    for index, (score, package, name, class_path) in enumerate(candidates[:120]):
+    for index, (package, name, class_path) in enumerate(skeletal_meshes, start=1):
         lines.append(
-            "M10_CANDIDATE {:03d} score={} class={} package={} name={}".format(
-                index + 1,
-                score,
+            "M10_SKELETAL {:03d} class={} package={} name={}".format(
+                index,
                 class_path,
                 package,
                 name,
             )
         )
 
-    if not candidates:
-        lines.append("M10_DISCOVERY: NO_VEHICLE_CANDIDATES_FOUND")
+    lines.append("")
+    lines.append("=== ALL PHYSICS ASSETS ===")
+
+    for index, (package, name, class_path) in enumerate(physics_assets, start=1):
         lines.append(
-            "M10_DISCOVERY: install/import a rigged four-wheel vehicle asset before final Chaos setup"
+            "M10_PHYSICS {:03d} class={} package={} name={}".format(
+                index,
+                class_path,
+                package,
+                name,
+            )
+        )
+
+    lines.append("")
+    lines.append("=== VEHICLE-LIKE BLUEPRINTS ONLY ===")
+
+    for index, (package, name, class_path) in enumerate(vehicle_blueprints, start=1):
+        lines.append(
+            "M10_VEHICLE_BP {:03d} class={} package={} name={}".format(
+                index,
+                class_path,
+                package,
+                name,
+            )
+        )
+
+    usable_meshes = [
+        row
+        for row in skeletal_meshes
+        if has_vehicle_term(row[0], row[1])
+    ]
+    usable_physics = [
+        row
+        for row in physics_assets
+        if has_vehicle_term(row[0], row[1])
+    ]
+
+    lines.append("")
+    lines.append(
+        "M10_DISCOVERY: vehicle_skeletal_candidates={}".format(len(usable_meshes))
+    )
+    lines.append(
+        "M10_DISCOVERY: vehicle_physics_candidates={}".format(len(usable_physics))
+    )
+
+    if not usable_meshes:
+        lines.append("M10_DISCOVERY: NO_VEHICLE_SKELETAL_MESH_FOUND")
+
+    if not usable_physics:
+        lines.append("M10_DISCOVERY: NO_VEHICLE_PHYSICS_ASSET_FOUND")
+
+    if not usable_meshes or not usable_physics:
+        lines.append(
+            "M10_DISCOVERY: a rigged four-wheel vehicle asset is still required for the final Chaos car"
         )
 
     report_path = os.path.join(unreal.Paths.project_saved_dir(), REPORT_NAME)
@@ -143,7 +147,7 @@ def main():
         report.write("\n".join(lines))
         report.write("\n")
 
-    for line in lines[:90]:
+    for line in lines:
         unreal.log_warning(line)
 
     unreal.log_warning("M10_DISCOVERY_REPORT={}".format(report_path))
