@@ -248,7 +248,7 @@ def build_world_base(mats):
         unreal.Vector(WORLD_SIZE, WORLD_SIZE, 160.0),
         mats["sidewalk"],
         True,
-        True,
+        False,
     )
 
     road_count = 0
@@ -269,14 +269,15 @@ def build_world_base(mats):
                 location = unreal.Vector(0.0, center, ROAD_Z)
                 size = unreal.Vector(WORLD_SIZE - 6000.0, width, ROAD_HEIGHT)
 
-            cube(
+            road = cube(
                 PREFIX + "Road_{}_{:02d}".format(axis, index),
                 location,
                 size,
                 mats["road"],
                 True,
-                True,
+                False,
             )
+            set_tags(road, "OWRoadSurface", "OWNoPopulationSpawn")
             road_count += 1
 
     log("M11: expanded road network roads={}".format(road_count))
@@ -606,14 +607,15 @@ def build_park_edge(mats):
         warn("M11: optional SM_UB_Bush_x150 not found; park remains hardscape")
 
     # Large parking area beside the plaza.
-    cube(
+    parking_surface = cube(
         PREFIX + "ParkEdge_ParkingSurface",
         unreal.Vector(36000.0, -24000.0, 14.0),
         unreal.Vector(8800.0, 7600.0, 10.0),
         mats["road"],
         True,
-        True,
+        False,
     )
+    set_tags(parking_surface, "OWRoadSurface", "OWNoPopulationSpawn")
 
     marking = mats["marking"] or mats["sidewalk"]
     marks = 0
@@ -699,6 +701,29 @@ def disable_prefab_local_lights():
     log("M11: decorative local lights disabled={}".format(disabled))
 
 
+def retag_core_pedestrian_surfaces():
+    # M9 originally treated its roads and huge ground slab as generic
+    # OWWalkableSpawn surfaces. That was acceptable for the small prototype,
+    # but in free roam it lets pedestrians appear directly in driving lanes.
+    # Retag only road/ground actors; keep SidewalkPad actors walkable.
+    changed = 0
+    for actor in actor_subsystem().get_all_level_actors():
+        if not actor:
+            continue
+
+        label = actor.get_actor_label()
+
+        if (
+            label == "OW_CITY_Ground"
+            or label.startswith("OW_CITY_Road_NS")
+            or label.startswith("OW_CITY_Road_EW")
+        ):
+            set_tags(actor, "OWRoadSurface", "OWNoPopulationSpawn")
+            changed += 1
+
+    log("M11: core road/ground pedestrian spawn surfaces disabled={}".format(changed))
+
+
 def verify_m10_preserved():
     labels = {
         actor.get_actor_label()
@@ -739,6 +764,7 @@ def main():
     mats = load_materials()
 
     build_world_base(mats)
+    retag_core_pedestrian_surfaces()
     add_lane_markings(mats)
     build_district_pads(mats)
     build_hero_prefabs()
