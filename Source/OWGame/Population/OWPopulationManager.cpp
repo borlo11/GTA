@@ -59,6 +59,21 @@ bool AOWPopulationManager::FindGroundedSpawnLocation(
         return false;
     }
 
+    if (const AActor* GroundActor = GroundHit.GetActor())
+    {
+        if (GroundActor->ActorHasTag(TEXT("OWNoPopulationSpawn")))
+        {
+            return false;
+        }
+
+#if WITH_EDITOR
+        if (GroundActor->GetActorLabel().Contains(TEXT("Building")))
+        {
+            return false;
+        }
+#endif
+    }
+
     OutLocation = GroundHit.ImpactPoint + FVector(0.0f, 0.0f, 96.0f);
     return true;
 }
