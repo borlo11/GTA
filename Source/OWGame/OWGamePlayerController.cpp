@@ -265,11 +265,11 @@ void AOWGamePlayerController::ExitChaosVehicle()
         false,
         nullptr,
         ETeleportType::TeleportPhysics);
-    DriverCharacter->SetActorHiddenInGame(false);
-    DriverCharacter->SetActorEnableCollision(true);
+    Character->SetActorHiddenInGame(false);
+    Character->SetActorEnableCollision(true);
 
     if (UCharacterMovementComponent* CharacterMovement =
-        DriverCharacter->GetCharacterMovement())
+        Character->GetCharacterMovement())
     {
         CharacterMovement->SetMovementMode(MOVE_Walking);
     }
@@ -301,7 +301,7 @@ void AOWGamePlayerController::ExitChaosVehicle()
         LogOWGame,
         Log,
         TEXT("%s exited Chaos vehicle %s."),
-        *DriverCharacter->GetName(),
+        *Character->GetName(),
         *VehiclePawn->GetName());
 }
 
