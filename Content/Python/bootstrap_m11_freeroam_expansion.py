@@ -663,14 +663,17 @@ def add_authored_facade_detail(district, x, y, ox, oy, sx, sy, sz, yaw, index):
 
 
 def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
-    """Add low-cost facade and rooftop cues so simple massing reads as architecture."""
+    """Readable facade rhythm at driving height without expensive glass/material systems."""
     dark = mats["dark"] or mats["sidewalk"]
+    light = mats["marking"] or mats["sidewalk"]
     base_z = 10.0
+    cx = x + ox
+    cy = y + oy
 
-    # Rooftop service/crown volume breaks the pure-box silhouette at distance.
+    # Rooftop service volume breaks the raw cuboid silhouette.
     cube(
         PREFIX + "RoofDetail_{:03d}".format(index),
-        unreal.Vector(x + ox, y + oy, base_z + sz + 52.0),
+        unreal.Vector(cx, cy, base_z + sz + 52.0),
         unreal.Vector(max(320.0, sx * 0.34), max(300.0, sy * 0.30), 104.0),
         dark,
         False,
@@ -680,64 +683,110 @@ def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
 
     rotated = int(round(yaw)) % 180 == 90
 
+    # We dress one road-facing facade. Horizontal strips read as window rows
+    # from a moving car and are vastly cheaper than hundreds of glass panes.
     if district == "Modern":
-        # Two restrained dark facade bands suggest glazing without adding
-        # expensive transparent materials or dozens of window meshes.
-        for band_index, ratio in enumerate((0.42, 0.70)):
+        row_count = max(3, min(5, int(sz / 420.0)))
+        for row in range(row_count):
+            ratio = (row + 1.0) / (row_count + 1.0)
             if rotated:
-                location = unreal.Vector(x + ox + sy * 0.5 + 8.0, y + oy, base_z + sz * ratio)
-                size = unreal.Vector(16.0, max(520.0, sx * 0.72), 64.0)
+                location = unreal.Vector(cx + sy * 0.5 + 9.0, cy, base_z + sz * ratio)
+                size = unreal.Vector(18.0, max(620.0, sx * 0.74), 86.0)
             else:
-                location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 8.0, base_z + sz * ratio)
-                size = unreal.Vector(max(520.0, sx * 0.72), 16.0, 64.0)
+                location = unreal.Vector(cx, cy + sy * 0.5 + 9.0, base_z + sz * ratio)
+                size = unreal.Vector(max(620.0, sx * 0.74), 18.0, 86.0)
 
             cube(
-                PREFIX + "Facade_Modern_{:03d}_{:02d}".format(index, band_index),
+                PREFIX + "Facade_WindowRow_Modern_{:03d}_{:02d}".format(index, row),
                 location,
                 size,
                 dark,
                 False,
                 False,
-                0.0,
             )
 
-    elif district == "Industrial":
-        # Large dark loading-door plane gives warehouses an obvious front.
+        # Ground-floor canopy/storefront band.
         if rotated:
-            location = unreal.Vector(x + ox + sy * 0.5 + 9.0, y + oy, base_z + min(250.0, sz * 0.45))
-            size = unreal.Vector(18.0, max(760.0, sx * 0.42), min(360.0, sz * 0.62))
+            canopy_location = unreal.Vector(cx + sy * 0.5 + 85.0, cy, base_z + 245.0)
+            canopy_size = unreal.Vector(170.0, max(700.0, sx * 0.64), 70.0)
         else:
-            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 9.0, base_z + min(250.0, sz * 0.45))
-            size = unreal.Vector(max(760.0, sx * 0.42), 18.0, min(360.0, sz * 0.62))
+            canopy_location = unreal.Vector(cx, cy + sy * 0.5 + 85.0, base_z + 245.0)
+            canopy_size = unreal.Vector(max(700.0, sx * 0.64), 170.0, 70.0)
 
         cube(
-            PREFIX + "Facade_Industrial_{:03d}".format(index),
-            location,
-            size,
+            PREFIX + "Facade_Canopy_Modern_{:03d}".format(index),
+            canopy_location,
+            canopy_size,
+            light,
+            False,
+            False,
+        )
+
+    elif district == "Industrial":
+        # Large loading door plus a high clerestory strip.
+        if rotated:
+            door_location = unreal.Vector(cx + sy * 0.5 + 10.0, cy, base_z + min(280.0, sz * 0.42))
+            door_size = unreal.Vector(20.0, max(900.0, sx * 0.48), min(430.0, sz * 0.68))
+            strip_location = unreal.Vector(cx + sy * 0.5 + 11.0, cy, base_z + sz * 0.76)
+            strip_size = unreal.Vector(22.0, max(1300.0, sx * 0.62), 70.0)
+        else:
+            door_location = unreal.Vector(cx, cy + sy * 0.5 + 10.0, base_z + min(280.0, sz * 0.42))
+            door_size = unreal.Vector(max(900.0, sx * 0.48), 20.0, min(430.0, sz * 0.68))
+            strip_location = unreal.Vector(cx, cy + sy * 0.5 + 11.0, base_z + sz * 0.76)
+            strip_size = unreal.Vector(max(1300.0, sx * 0.62), 22.0, 70.0)
+
+        cube(
+            PREFIX + "Facade_IndustrialDoor_{:03d}".format(index),
+            door_location,
+            door_size,
             dark,
             False,
             False,
-            0.0,
+        )
+        cube(
+            PREFIX + "Facade_IndustrialClerestory_{:03d}".format(index),
+            strip_location,
+            strip_size,
+            dark,
+            False,
+            False,
         )
 
     else:
-        # Small projecting awning/entry cue keeps residential masses from
-        # reading as untouched cubes.
+        # Residential / park-edge: two window rows plus an entrance canopy.
+        row_count = 2 if sz < 1000.0 else 3
+        for row in range(row_count):
+            ratio = 0.42 + row * 0.24
+            if rotated:
+                location = unreal.Vector(cx + sy * 0.5 + 9.0, cy, base_z + sz * ratio)
+                size = unreal.Vector(18.0, max(520.0, sx * 0.62), 72.0)
+            else:
+                location = unreal.Vector(cx, cy + sy * 0.5 + 9.0, base_z + sz * ratio)
+                size = unreal.Vector(max(520.0, sx * 0.62), 18.0, 72.0)
+
+            cube(
+                PREFIX + "Facade_WindowRow_Residential_{:03d}_{:02d}".format(index, row),
+                location,
+                size,
+                dark,
+                False,
+                False,
+            )
+
         if rotated:
-            location = unreal.Vector(x + ox + sy * 0.5 + 70.0, y + oy, base_z + 225.0)
-            size = unreal.Vector(150.0, min(650.0, sx * 0.48), 70.0)
+            canopy_location = unreal.Vector(cx + sy * 0.5 + 70.0, cy, base_z + 215.0)
+            canopy_size = unreal.Vector(140.0, min(760.0, sx * 0.44), 64.0)
         else:
-            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 70.0, base_z + 225.0)
-            size = unreal.Vector(min(650.0, sx * 0.48), 150.0, 70.0)
+            canopy_location = unreal.Vector(cx, cy + sy * 0.5 + 70.0, base_z + 215.0)
+            canopy_size = unreal.Vector(min(760.0, sx * 0.44), 140.0, 64.0)
 
         cube(
-            PREFIX + "Facade_Residential_{:03d}".format(index),
-            location,
-            size,
+            PREFIX + "Facade_EntryCanopy_{:03d}".format(index),
+            canopy_location,
+            canopy_size,
             dark,
             False,
             False,
-            0.0,
         )
 
 
@@ -782,30 +831,32 @@ def build_background_districts(mats):
                 continue
 
             if district == "Residential":
+                # Push frontages toward the block edge. The previous 15-20 m
+                # setbacks made every road feel like a parking apron.
                 local = (
-                    (-2350.0, -1750.0, 2050.0, 1600.0, 760.0, 0.0),
-                    (1750.0, -900.0, 1750.0, 1450.0, 920.0, 90.0),
-                    (250.0, 2050.0, 2200.0, 1500.0, 820.0, 0.0),
-                    (2450.0, 2100.0, 1250.0, 1250.0, 640.0, 90.0),
+                    (-3350.0, -2450.0, 2050.0, 1600.0, 760.0, 0.0),
+                    (3000.0, -1850.0, 1750.0, 1450.0, 920.0, 90.0),
+                    (-2600.0, 2950.0, 2200.0, 1500.0, 820.0, 0.0),
+                    (2850.0, 2850.0, 1250.0, 1250.0, 640.0, 90.0),
                 )
             elif district == "Modern":
                 local = (
-                    (-2150.0, -1250.0, 1850.0, 1650.0, 1750.0, 0.0),
-                    (1750.0, 1200.0, 1700.0, 1800.0, 2250.0, 90.0),
-                    (-250.0, 2350.0, 2900.0, 1100.0, 780.0, 0.0),
-                    (2450.0, -2300.0, 1200.0, 1300.0, 1450.0, 90.0),
+                    (-3200.0, -1800.0, 1850.0, 1650.0, 1750.0, 0.0),
+                    (2800.0, 2000.0, 1700.0, 1800.0, 2250.0, 90.0),
+                    (-350.0, 3350.0, 2900.0, 1100.0, 780.0, 0.0),
+                    (3200.0, -3000.0, 1200.0, 1300.0, 1450.0, 90.0),
                 )
             elif district == "ParkEdge":
                 local = (
-                    (-2200.0, -1750.0, 1800.0, 1550.0, 1150.0, 0.0),
-                    (1650.0, 1250.0, 1650.0, 1650.0, 1450.0, 90.0),
-                    (400.0, 2300.0, 2500.0, 1000.0, 720.0, 0.0),
+                    (-3100.0, -2400.0, 1800.0, 1550.0, 1150.0, 0.0),
+                    (2650.0, 2100.0, 1650.0, 1650.0, 1450.0, 90.0),
+                    (400.0, 3350.0, 2500.0, 1000.0, 720.0, 0.0),
                 )
             else:
                 local = (
-                    (-1950.0, -1550.0, 3450.0, 2050.0, 820.0, 0.0),
-                    (2050.0, 1450.0, 3200.0, 1950.0, 960.0, 90.0),
-                    (100.0, 2350.0, 2200.0, 1150.0, 650.0, 0.0),
+                    (-2600.0, -2400.0, 3450.0, 2050.0, 820.0, 0.0),
+                    (2600.0, 2100.0, 3200.0, 1950.0, 960.0, 90.0),
+                    (100.0, 3400.0, 2200.0, 1150.0, 650.0, 0.0),
                 )
 
             for part_index, (ox, oy, sx, sy, sz, yaw) in enumerate(local):
@@ -1301,6 +1352,93 @@ def build_green_clusters(mats):
     log("M11: green cluster bushes={}".format(bush_count))
 
 
+def build_boulevard_greenery():
+    """Visible planting along the two main axes so street-level views stop reading as concrete deserts."""
+    bush_mesh = find_asset("/Game/Uniblocks/Meshes", "SM_UB_Bush_x150")
+    if not bush_mesh:
+        warn("M11: boulevard greenery skipped; SM_UB_Bush_x150 unavailable")
+        return
+
+    positions = []
+    for p in (-33000.0, -27000.0, -21000.0, -15000.0, 15000.0, 21000.0, 27000.0, 33000.0):
+        positions.extend((
+            (p, 1120.0),
+            (p, -1120.0),
+            (1120.0, p),
+            (-1120.0, p),
+        ))
+
+    count = 0
+    for x, y in positions:
+        actor = actor_subsystem().spawn_actor_from_class(
+            unreal.StaticMeshActor,
+            unreal.Vector(x, y, 120.0),
+            unreal.Rotator(0.0, float((count * 53) % 360), 0.0),
+        )
+        if not actor:
+            continue
+
+        set_label(actor, PREFIX + "Env_BoulevardBush_{:03d}".format(count))
+        set_tags(actor, "OWNoPopulationSpawn")
+        actor.static_mesh_component.set_static_mesh(bush_mesh)
+        actor.static_mesh_component.set_mobility(unreal.ComponentMobility.STATIC)
+        actor.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+
+        scale = 0.95 + (count % 3) * 0.12
+        actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
+        count += 1
+
+    log("M11: boulevard greenery bushes={}".format(count))
+
+
+def add_inner_street_lights(mats):
+    """Regular lighting rhythm on the central boulevards, not only at the map boundary."""
+    dark = mats["dark"] or mats["sidewalk"]
+    lamp_mesh = unreal.load_asset(AUTHORED_PARTS["lamp_head"])
+    positions = []
+
+    for p in (-33000.0, -27000.0, -21000.0, -15000.0, -9000.0, 9000.0, 15000.0, 21000.0, 27000.0, 33000.0):
+        positions.extend((
+            (p, 980.0, 0.0),
+            (p, -980.0, 180.0),
+            (980.0, p, 90.0),
+            (-980.0, p, 270.0),
+        ))
+
+    for index, (x, y, yaw) in enumerate(positions):
+        cylinder(
+            PREFIX + "InnerStreetLight_{:02d}_Pole".format(index),
+            unreal.Vector(x, y, 230.0),
+            16.0,
+            460.0,
+            dark,
+            False,
+        )
+
+        if lamp_mesh:
+            spawn_mesh_sized(
+                PREFIX + "InnerStreetLight_{:02d}_Head".format(index),
+                lamp_mesh,
+                unreal.Vector(x, y, 455.0),
+                unreal.Vector(130.0, 70.0, 58.0),
+                None,
+                False,
+                yaw,
+            )
+        else:
+            cube(
+                PREFIX + "InnerStreetLight_{:02d}_Head".format(index),
+                unreal.Vector(x, y, 455.0),
+                unreal.Vector(110.0, 24.0, 18.0),
+                dark,
+                False,
+                False,
+                yaw,
+            )
+
+    log("M11: inner streetlights={}".format(len(positions)))
+
+
 def build_skyline_landmarks(mats):
     """Distributed mid-rise skyline; avoids three isolated prototype towers."""
     backgrounds = mats["background"] or [mats["sidewalk"]]
@@ -1548,16 +1686,18 @@ def main():
     build_road_detail_pass(mats)
     build_street_furniture(mats)
     build_green_clusters(mats)
+    build_boulevard_greenery()
     build_street_tree_rows()
     build_skyline_landmarks(mats)
 
+    add_inner_street_lights(mats)
     add_outer_street_lights(mats)
     disable_prefab_local_lights()
 
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE F DENSITY AND SKYLINE CORRECTION COMPLETE")
+    log("M11: PHASE G STREET-LEVEL READABILITY PASS COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 

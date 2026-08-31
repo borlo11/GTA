@@ -252,3 +252,20 @@ Phase F corrects the visual strategy:
 - an optional runtime discovery pass adds real local UNIBLOCKS street trees when a safe complete tree mesh is available, without making the bootstrap dependent on a fabricated asset path.
 
 This phase prioritizes a coherent city silhouette and density over forcing individual modular pieces into contexts where their pivots/bounds are unknown.
+
+
+## Phase G — street-level readability pass
+
+The Phase F road-height screenshot showed that overall density and skyline distribution had improved, but the city still read as blockout architecture from the SportsCar camera. The remaining problem was not world size: it was street-edge composition.
+
+Phase G therefore focuses on the player-height view:
+
+- district background buildings are pushed toward the block perimeter to create a stronger street wall and remove oversized empty setbacks;
+- modern buildings receive multiple dark window-row bands plus a ground-floor canopy;
+- residential / park-edge buildings receive two or three window rows plus an entrance canopy;
+- industrial buildings receive a large loading-door read and high clerestory strip;
+- the two main boulevards receive 32 clearly visible UNIBLOCKS bush instances at larger scale;
+- the central road axes receive 40 additional streetlights (pole + head) so lighting/street furniture exists inside the city rather than only on the outer perimeter;
+- all new dressing remains static/non-colliding and keeps the existing gameplay/vehicle coordinates intact.
+
+The intent is to make a normal driving screenshot read as an urban street first and as procedural generation second.
