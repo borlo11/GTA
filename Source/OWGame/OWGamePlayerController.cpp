@@ -98,6 +98,11 @@ void AOWGamePlayerController::SetupInputComponent()
         IE_Released,
         this,
         &AOWGamePlayerController::VehicleHandbrakeReleased);
+    InputComponent->BindKey(
+        EKeys::X,
+        IE_Pressed,
+        this,
+        &AOWGamePlayerController::VehicleResetPressed);
     FInputKeyBinding& VehicleExitBinding = InputComponent->BindKey(
         EKeys::E,
         IE_Pressed,
@@ -350,8 +355,20 @@ AOWGamePlayerController::GetActiveChaosMovement() const
         : nullptr;
 }
 
+void AOWGamePlayerController::WakeActiveChaosVehicle()
+{
+    if (UChaosWheeledVehicleMovementComponent* Movement =
+        GetActiveChaosMovement())
+    {
+        Movement->SetSleeping(false);
+        Movement->SetParked(false);
+    }
+}
+
 void AOWGamePlayerController::UpdateSteeringInput()
 {
+    WakeActiveChaosVehicle();
+
     UChaosWheeledVehicleMovementComponent* Movement =
         GetActiveChaosMovement();
 
@@ -369,6 +386,8 @@ void AOWGamePlayerController::UpdateSteeringInput()
 
 void AOWGamePlayerController::VehicleForwardPressed()
 {
+    WakeActiveChaosVehicle();
+
     if (UChaosWheeledVehicleMovementComponent* Movement =
         GetActiveChaosMovement())
     {
@@ -388,6 +407,8 @@ void AOWGamePlayerController::VehicleForwardReleased()
 
 void AOWGamePlayerController::VehicleReversePressed()
 {
+    WakeActiveChaosVehicle();
+
     if (UChaosWheeledVehicleMovementComponent* Movement =
         GetActiveChaosMovement())
     {
@@ -444,6 +465,8 @@ void AOWGamePlayerController::VehicleSteerRightReleased()
 
 void AOWGamePlayerController::VehicleHandbrakePressed()
 {
+    WakeActiveChaosVehicle();
+
     if (UChaosWheeledVehicleMovementComponent* Movement =
         GetActiveChaosMovement())
     {
@@ -458,6 +481,53 @@ void AOWGamePlayerController::VehicleHandbrakeReleased()
     {
         Movement->SetHandbrakeInput(false);
     }
+}
+
+void AOWGamePlayerController::VehicleResetPressed()
+{
+    if (!IsDrivingChaosVehicle() || !IsValid(ActiveVehiclePawn))
+    {
+        return;
+    }
+
+    UChaosWheeledVehicleMovementComponent* Movement =
+        GetActiveChaosMovement();
+
+    if (Movement)
+    {
+        Movement->SetThrottleInput(0.0f);
+        Movement->SetBrakeInput(0.0f);
+        Movement->SetSteeringInput(0.0f);
+        Movement->SetHandbrakeInput(false);
+        Movement->StopMovementImmediately();
+    }
+
+    // Lift the vehicle clear of curbs/geometry while preserving its current
+    // heading. This is intentionally a gameplay recovery action rather than a
+    // respawn so free-roam testing can continue immediately.
+    const FVector ResetLocation =
+        ActiveVehiclePawn->GetActorLocation() + FVector(0.0f, 0.0f, 140.0f);
+    const FRotator ResetRotation(
+        0.0f,
+        ActiveVehiclePawn->GetActorRotation().Yaw,
+        0.0f);
+
+    ActiveVehiclePawn->SetActorLocationAndRotation(
+        ResetLocation,
+        ResetRotation,
+        false,
+        nullptr,
+        ETeleportType::TeleportPhysics);
+
+    bVehicleSteerLeftHeld = false;
+    bVehicleSteerRightHeld = false;
+    WakeActiveChaosVehicle();
+
+    UE_LOG(
+        LogOWGame,
+        Log,
+        TEXT("Chaos vehicle reset at %s."),
+        *ResetLocation.ToCompactString());
 }
 
 void AOWGamePlayerController::VehicleExitPressed()
