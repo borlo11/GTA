@@ -50,4 +50,22 @@ Denser urban grid, road markings, crosswalks, parking detail, varied building si
 
 Replace the floating-box vehicle prototype with a Chaos Vehicles-based drivable car foundation, realistic wheel/suspension behavior, speed-sensitive steering, braking/handbrake, improved vehicle camera, and a reusable multi-vehicle architecture.
 
-Post-M10 milestones will be defined from visual, vehicle, combat, AI/police, audio/UI, and production-quality priorities after each vertical-slice review.
+## M11 — Environment & free-roam world
+
+Expand the compact district into a larger, more varied free-roam environment with distinct districts, stronger environmental density, improved graphics/atmosphere, long driving routes, and continued 60 FPS validation.
+
+## M12 — Graphics & atmosphere
+
+Refine lighting, materials, post-processing, time-of-day foundations, weather-ready atmosphere, and quality tiers after the larger world layout is stable.
+
+## M13 — Living free roam
+
+Traffic foundations, richer pedestrian behavior, ambient activity, improved police behavior, and free-roam UI/audio.
+
+## M14 — World density & production optimization
+
+Further district dressing, selected interiors, HLOD/streaming/World Partition work, asset optimization, and production-quality performance passes.
+
+## Story phase
+
+Story, mission chains, cutscenes, dialogue, progression, and narrative scripting become the next major focus after the free-roam world is strong enough to support them.
