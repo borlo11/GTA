@@ -70,6 +70,12 @@ AOWGameCharacter::AOWGameCharacter()
     Movement->AirControl = 0.35f;
     Movement->MaxWalkSpeed = WalkSpeed;
 
+    // A pedestrian should not be able to shove a parked car around simply by
+    // walking into it. CharacterMovement's default physics interaction applies
+    // substantial push forces to simulated bodies, so disable that assistance.
+    // Collision still blocks the character normally.
+    Movement->bEnablePhysicsInteraction = false;
+
     VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
     VisualRoot->SetupAttachment(RootComponent);
 
