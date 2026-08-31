@@ -215,3 +215,24 @@ All Phase D content remains under the `OW_M11_` ownership prefix and is regenera
 The pass intentionally keeps transparent glass, dense dynamic lights, final traffic, interiors and high-cost foliage out of scope. The 60 FPS / 16.67 ms target remains authoritative.
 
 Cloud-side Unreal validation is **NOT EXECUTED** because the repository runner does not provide UE 5.8. Local editor validation must run the bootstrap, `validate_m11_freeroam_expansion.py`, representative free-roam driving and the existing gameplay automation tests.
+
+
+## Phase E — authored-asset city pass
+
+Phase D improved density and silhouette, but the first driving screenshot still read as an advanced blockout: too many bare cuboids, a repetitive three-tower skyline and procedural street-light heads.
+
+Phase E uses the local M11 asset inventory to move visible detail toward actual UNIBLOCKS content without redistributing Fab assets.
+
+Changes:
+
+- authored prefab LevelInstances increase from four outer heroes to twelve carefully placed residential/modern hero and infill sites;
+- background massing skips every authored prefab lot so real architecture does not overlap procedural boxes;
+- visible UNIBLOCKS swing/sliding door meshes and window/gate modules are attached to cheap background buildings at controlled dimensions;
+- the industrial district uses the confirmed visible fence mesh through an exact asset path;
+- outer street lights use a confirmed UNIBLOCKS lamp-head mesh when available, with the previous primitive head retained only as a fallback;
+- the three skyline landmarks are rebuilt as stepped, offset silhouettes with multiple roof/service volumes instead of identical vertical slabs;
+- skyline facades receive real visible UNIBLOCKS window/gate inserts.
+
+All exact visible-part paths came from the user's local inventory. Missing optional parts degrade gracefully; core roads, M9/M10 gameplay and the 60 FPS / 16.67 ms target remain unchanged.
+
+Cloud-side Unreal validation is **NOT EXECUTED**. Local acceptance requires rerunning the bootstrap and validator in UE 5.8, followed by representative on-foot and SportsCar free-roam screenshots/performance checks.

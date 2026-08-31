@@ -31,6 +31,38 @@ PREFABS = {
     "art": "/Game/Uniblocks/Maps/LI_prefab_Art_house_elevated_v1",
 }
 
+# Phase E increases real authored architecture while keeping LevelInstance
+# density deliberately modest for the project's 60 FPS target.
+AUTHORED_PREFAB_SITES = (
+    ("Residential_Hero_Classic", "classic", -30000.0, 30000.0, 0.0),
+    ("Residential_Hero_Art", "art", -18000.0, 18000.0, 180.0),
+    ("Modern_Hero_Modern", "modern", 18000.0, 30000.0, 180.0),
+    ("Modern_Hero_Future", "future", 30000.0, 18000.0, 0.0),
+
+    ("Residential_Infill_01", "classic", -30000.0, 18000.0, 90.0),
+    ("Residential_Infill_02", "art", -18000.0, 30000.0, 270.0),
+    ("Residential_Infill_03", "classic", -6000.0, 30000.0, 180.0),
+    ("Residential_Infill_04", "art", -30000.0, 6000.0, 0.0),
+
+    ("Modern_Infill_01", "modern", 30000.0, 30000.0, 90.0),
+    ("Modern_Infill_02", "future", 18000.0, 18000.0, 270.0),
+    ("Modern_Infill_03", "modern", 6000.0, 30000.0, 0.0),
+    ("Modern_Infill_04", "future", 30000.0, 6000.0, 180.0),
+)
+
+# Exact visible (non-collider) assets confirmed by the user's local M11
+# inventory. Optional loading keeps the bootstrap resilient to a modified
+# local Fab installation.
+AUTHORED_PARTS = {
+    "door_swing": "/Game/Uniblocks/Meshes/Doors_swing/Parts/SM_UBP_DoorA_body_window_2",
+    "door_slide": "/Game/Uniblocks/Meshes/Doors_slide/Parts/SM_UBP_DoorB_body_window_3",
+    "window_big": "/Game/Uniblocks/Meshes/Gate/Parts_window/SM_UBP_Gate_sgmtWindowBig_03",
+    "window_mid": "/Game/Uniblocks/Meshes/Gate/Parts_window/SM_UBP_Gate_sgmtWindowMid_04",
+    "fence_big": "/Game/Uniblocks/Meshes/Gate/Parts_fence/SM_UBP_Gate_sgmtFenceBig_01",
+    "flowerbed": "/Game/Uniblocks/Meshes/Garden/Parts/SM_UBP_Flowerbed_single_wall_top_t15",
+    "lamp_head": "/Game/Uniblocks/Meshes/Lights/Parts/SM_UBP_Lamp_end_rectangular_middle",
+}
+
 ROAD_MATERIAL_NAMES = (
     "MI_UBT_concreteSmooth_dark",
     "MI_UBT_concreteAged_lines",
@@ -230,6 +262,24 @@ def spawn_optional_visible_mesh(label, mesh_name, location, scale, yaw=0.0):
 
     actor.set_actor_scale3d(scale)
     return actor
+
+
+def spawn_authored_part_sized(label, mesh_path, location, target_size, yaw=0.0, collision=False):
+    """Spawn an inventory-confirmed UNIBLOCKS visible mesh at a controlled size."""
+    mesh = unreal.load_asset(mesh_path)
+    if not mesh:
+        warn("M11: optional authored part missing: {}".format(mesh_path))
+        return None
+
+    return spawn_mesh_sized(
+        label,
+        mesh,
+        location,
+        target_size,
+        None,
+        collision,
+        yaw,
+    )
 
 
 def load_materials():
@@ -440,14 +490,7 @@ def build_district_pads(mats):
 
 
 def build_hero_prefabs():
-    heroes = (
-        ("Residential_Hero_Classic", "classic", -30000.0, 30000.0, 0.0),
-        ("Residential_Hero_Art", "art", -18000.0, 18000.0, 180.0),
-        ("Modern_Hero_Modern", "modern", 18000.0, 30000.0, 180.0),
-        ("Modern_Hero_Future", "future", 30000.0, 18000.0, 0.0),
-    )
-
-    for label, prefab_key, x, y, yaw in heroes:
+    for label, prefab_key, x, y, yaw in AUTHORED_PREFAB_SITES:
         spawn_prefab(
             PREFIX + label,
             PREFABS[prefab_key],
@@ -455,8 +498,102 @@ def build_hero_prefabs():
             yaw,
         )
 
-    log("M11: authored outer hero prefabs={}".format(len(heroes)))
+    log("M11: authored outer hero/infill prefabs={}".format(len(AUTHORED_PREFAB_SITES)))
 
+
+def add_authored_facade_detail(district, x, y, ox, oy, sx, sy, sz, yaw, index):
+    """Place real UNIBLOCKS visible parts onto the cheap background masses."""
+    base_z = 10.0
+    rotated = int(round(yaw)) % 180 == 90
+
+    if district == "Modern":
+        mesh_path = (
+            AUTHORED_PARTS["window_big"]
+            if index % 2 == 0
+            else AUTHORED_PARTS["window_mid"]
+        )
+        target = unreal.Vector(
+            max(520.0, min(980.0, sx * 0.58)),
+            48.0,
+            max(220.0, min(430.0, sz * 0.33)),
+        )
+        z = base_z + sz * 0.56
+
+        if rotated:
+            location = unreal.Vector(x + ox + sy * 0.5 + 22.0, y + oy, z)
+            part_yaw = 90.0
+        else:
+            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 22.0, z)
+            part_yaw = 0.0
+
+        spawn_authored_part_sized(
+            PREFIX + "AuthoredFacade_Window_{:03d}".format(index),
+            mesh_path,
+            location,
+            target,
+            part_yaw,
+            False,
+        )
+
+    elif district == "Residential":
+        if index % 2 == 0:
+            mesh_path = AUTHORED_PARTS["door_swing"]
+            target = unreal.Vector(
+                max(240.0, min(360.0, sx * 0.20)),
+                50.0,
+                max(280.0, min(390.0, sz * 0.58)),
+            )
+            z = base_z + target.z * 0.5
+            label = PREFIX + "AuthoredFacade_Door_{:03d}".format(index)
+        else:
+            mesh_path = AUTHORED_PARTS["window_mid"]
+            target = unreal.Vector(
+                max(360.0, min(620.0, sx * 0.34)),
+                45.0,
+                max(190.0, min(300.0, sz * 0.36)),
+            )
+            z = base_z + sz * 0.58
+            label = PREFIX + "AuthoredFacade_Window_{:03d}".format(index)
+
+        if rotated:
+            location = unreal.Vector(x + ox + sy * 0.5 + 20.0, y + oy, z)
+            part_yaw = 90.0
+        else:
+            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 20.0, z)
+            part_yaw = 0.0
+
+        spawn_authored_part_sized(
+            label,
+            mesh_path,
+            location,
+            target,
+            part_yaw,
+            False,
+        )
+
+    elif district == "Industrial":
+        target = unreal.Vector(
+            max(720.0, min(1250.0, sx * 0.42)),
+            58.0,
+            max(300.0, min(470.0, sz * 0.66)),
+        )
+        z = base_z + target.z * 0.5
+
+        if rotated:
+            location = unreal.Vector(x + ox + sy * 0.5 + 24.0, y + oy, z)
+            part_yaw = 90.0
+        else:
+            location = unreal.Vector(x + ox, y + oy + sy * 0.5 + 24.0, z)
+            part_yaw = 0.0
+
+        spawn_authored_part_sized(
+            PREFIX + "AuthoredFacade_LoadingDoor_{:03d}".format(index),
+            AUTHORED_PARTS["door_slide"],
+            location,
+            target,
+            part_yaw,
+            False,
+        )
 
 
 def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
@@ -537,6 +674,19 @@ def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
             0.0,
         )
 
+    add_authored_facade_detail(
+        district,
+        x,
+        y,
+        ox,
+        oy,
+        sx,
+        sy,
+        sz,
+        yaw,
+        index,
+    )
+
 
 def build_background_districts(mats):
     """
@@ -553,10 +703,8 @@ def build_background_districts(mats):
     """
     backgrounds = mats["background"] or [mats["sidewalk"]]
     hero_lots = {
-        (-30000.0, 30000.0),
-        (-18000.0, 18000.0),
-        (18000.0, 30000.0),
-        (30000.0, 18000.0),
+        (x, y)
+        for _label, _prefab_key, x, y, _yaw in AUTHORED_PREFAB_SITES
     }
 
     count = 0
@@ -712,7 +860,7 @@ def build_phase_c_landscaping(mats):
 def build_industrial_dressing(mats):
     # Fence/gate parts are confirmed by the M11 inventory and come from visible
     # Parts/, not Colliders/.
-    fence_mesh_name = "SM_UBP_Gate_sgmtFenceBig_01"
+    fence_mesh = unreal.load_asset(AUTHORED_PARTS["fence_big"])
     fence_count = 0
 
     for base_x, base_y, yaw in (
@@ -723,13 +871,18 @@ def build_industrial_dressing(mats):
         (-33000.0, -30000.0, 0.0),
         (-27000.0, -30000.0, 0.0),
     ):
-        actor = spawn_optional_visible_mesh(
-            PREFIX + "Industrial_Fence_{:02d}".format(fence_count),
-            fence_mesh_name,
-            unreal.Vector(base_x, base_y, 35.0),
-            unreal.Vector(1.0, 1.0, 1.0),
-            yaw,
-        )
+        if fence_mesh:
+            actor = spawn_mesh_sized(
+                PREFIX + "Industrial_Fence_{:02d}".format(fence_count),
+                fence_mesh,
+                unreal.Vector(base_x, base_y, 120.0),
+                unreal.Vector(1500.0, 75.0, 240.0),
+                None,
+                True,
+                yaw,
+            )
+        else:
+            actor = None
         if actor:
             fence_count += 1
 
@@ -1082,19 +1235,21 @@ def build_green_clusters(mats):
 
 
 def build_skyline_landmarks(mats):
-    """Add a few edge-of-world vertical anchors built from lightweight masses."""
+    """Edge landmarks with stepped silhouettes and real facade inserts."""
     backgrounds = mats["background"] or [mats["sidewalk"]]
     dark = mats["dark"] or mats["sidewalk"]
 
     sites = (
-        ("EastGate", 42500.0, 30000.0, 1900.0, 1700.0, 6200.0),
-        ("NorthGate", 30000.0, 42500.0, 1700.0, 1900.0, 7600.0),
-        ("Corner", 42000.0, 42000.0, 1500.0, 1500.0, 9000.0),
+        ("EastGate", 42500.0, 30000.0, 2200.0, 1500.0, 5600.0, 180.0, -120.0),
+        ("NorthGate", 30000.0, 42500.0, 1500.0, 2350.0, 7000.0, -160.0, 220.0),
+        ("Corner", 42000.0, 42000.0, 1950.0, 1750.0, 8200.0, 210.0, -190.0),
     )
 
     parts = 0
-    for index, (name, x, y, sx, sy, tower_h) in enumerate(sites):
-        pad_size = 6200.0 if name != "Corner" else 5200.0
+    authored_windows = 0
+
+    for index, (name, x, y, sx, sy, tower_h, upper_dx, upper_dy) in enumerate(sites):
+        pad_size = 6200.0 if name != "Corner" else 5400.0
         cube(
             PREFIX + "Skyline_{}_Pad".format(name),
             unreal.Vector(x, y, -4.0),
@@ -1104,54 +1259,115 @@ def build_skyline_landmarks(mats):
             False,
         )
 
-        podium_h = 650.0
+        podium_h = 620.0 + index * 70.0
         cube(
             PREFIX + "Skyline_{}_Podium".format(name),
             unreal.Vector(x, y, podium_h * 0.5),
-            unreal.Vector(sx * 1.55, sy * 1.55, podium_h),
+            unreal.Vector(sx * 1.62, sy * 1.58, podium_h),
             backgrounds[index % len(backgrounds)],
             True,
             False,
         )
         parts += 1
 
+        lower_h = tower_h * 0.61
+        upper_h = tower_h - lower_h
+
         cube(
-            PREFIX + "Skyline_{}_Tower".format(name),
-            unreal.Vector(x, y, podium_h + tower_h * 0.5),
-            unreal.Vector(sx, sy, tower_h),
+            PREFIX + "Skyline_{}_Lower".format(name),
+            unreal.Vector(x, y, podium_h + lower_h * 0.5),
+            unreal.Vector(sx, sy, lower_h),
             backgrounds[(index + 1) % len(backgrounds)],
             True,
             False,
         )
         parts += 1
 
-        crown_h = 520.0
+        upper_x = x + upper_dx
+        upper_y = y + upper_dy
+        upper_sx = sx * (0.68 + index * 0.035)
+        upper_sy = sy * (0.72 - index * 0.025)
+
+        cube(
+            PREFIX + "Skyline_{}_Upper".format(name),
+            unreal.Vector(upper_x, upper_y, podium_h + lower_h + upper_h * 0.5),
+            unreal.Vector(upper_sx, upper_sy, upper_h),
+            backgrounds[(index + 2) % len(backgrounds)],
+            True,
+            False,
+        )
+        parts += 1
+
+        crown_h = 360.0 + index * 80.0
         cube(
             PREFIX + "Skyline_{}_Crown".format(name),
-            unreal.Vector(x, y, podium_h + tower_h + crown_h * 0.5),
-            unreal.Vector(sx * 0.62, sy * 0.62, crown_h),
+            unreal.Vector(
+                upper_x,
+                upper_y,
+                podium_h + tower_h + crown_h * 0.5,
+            ),
+            unreal.Vector(upper_sx * 0.58, upper_sy * 0.58, crown_h),
             dark,
             False,
             False,
         )
         parts += 1
 
-        # One offset rooftop/service box prevents a perfectly symmetrical toy silhouette.
+        window_mesh = (
+            AUTHORED_PARTS["window_big"]
+            if index != 1
+            else AUTHORED_PARTS["window_mid"]
+        )
+        for row in range(3):
+            z = podium_h + lower_h * (0.22 + row * 0.25)
+            part = spawn_authored_part_sized(
+                PREFIX + "AuthoredSkyline_Window_{}_{:02d}".format(name, row),
+                window_mesh,
+                unreal.Vector(x, y + sy * 0.5 + 24.0, z),
+                unreal.Vector(max(700.0, sx * 0.62), 48.0, 360.0),
+                0.0,
+                False,
+            )
+            if part:
+                authored_windows += 1
+
         cube(
-            PREFIX + "Skyline_{}_RoofService".format(name),
-            unreal.Vector(x + sx * 0.22, y - sy * 0.18, podium_h + tower_h + crown_h + 115.0),
-            unreal.Vector(340.0, 300.0, 230.0),
+            PREFIX + "Skyline_{}_RoofServiceA".format(name),
+            unreal.Vector(
+                upper_x + upper_sx * 0.18,
+                upper_y - upper_sy * 0.14,
+                podium_h + tower_h + crown_h + 105.0,
+            ),
+            unreal.Vector(360.0, 300.0, 210.0),
             dark,
             False,
             False,
         )
-        parts += 1
+        cube(
+            PREFIX + "Skyline_{}_RoofServiceB".format(name),
+            unreal.Vector(
+                upper_x - upper_sx * 0.19,
+                upper_y + upper_sy * 0.16,
+                podium_h + tower_h + crown_h + 72.0,
+            ),
+            unreal.Vector(250.0, 280.0, 145.0),
+            dark,
+            False,
+            False,
+        )
+        parts += 2
 
-    log("M11: skyline landmark parts={}".format(parts))
+    log(
+        "M11: skyline landmark parts={} authored_windows={}".format(
+            parts,
+            authored_windows,
+        )
+    )
 
 
 def add_outer_street_lights(mats):
     dark = mats["dark"] or mats["sidewalk"]
+    lamp_mesh = unreal.load_asset(AUTHORED_PARTS["lamp_head"])
     positions = []
 
     for p in (-36000.0, -24000.0, -12000.0, 12000.0, 24000.0, 36000.0):
@@ -1169,14 +1385,25 @@ def add_outer_street_lights(mats):
             dark,
             False,
         )
-        cube(
-            PREFIX + "StreetLight_{:02d}_Head".format(index),
-            unreal.Vector(x + 55.0, y, 455.0),
-            unreal.Vector(110.0, 24.0, 18.0),
-            dark,
-            False,
-            False,
-        )
+        if lamp_mesh:
+            spawn_mesh_sized(
+                PREFIX + "StreetLight_{:02d}_AuthoredHead".format(index),
+                lamp_mesh,
+                unreal.Vector(x + 62.0, y, 455.0),
+                unreal.Vector(130.0, 70.0, 58.0),
+                None,
+                False,
+                0.0,
+            )
+        else:
+            cube(
+                PREFIX + "StreetLight_{:02d}_Head".format(index),
+                unreal.Vector(x + 55.0, y, 455.0),
+                unreal.Vector(110.0, 24.0, 18.0),
+                dark,
+                False,
+                False,
+            )
 
     log("M11: outer streetlights={}".format(len(positions)))
 
@@ -1302,7 +1529,7 @@ def main():
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE D OPEN-WORLD DRESSING PASS COMPLETE")
+    log("M11: PHASE E AUTHORED-ASSET CITY PASS COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 
