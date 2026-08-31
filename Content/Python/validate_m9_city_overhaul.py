@@ -46,7 +46,7 @@ def main():
     require(PREFIX + "Fog" in labels, "fog missing")
 
     require(len(pads) >= 16, "urban block pads missing")
-    require(len(buildings) >= 14, "expected 14 authored prefab building instances")
+    require(len(buildings) >= 14, "expected hero prefabs plus background building masses")
     require(len(road_marks) >= 60, "lane markings too sparse")
     require(len(crosswalks) == 24, "expected four six-stripe crosswalks")
     require(len(lights) >= 20, "street-light geometry missing")
@@ -61,8 +61,10 @@ def main():
         ]
 
     require(
-        len(prefab_instances) >= 14,
-        "authored UNIBLOCKS LevelInstances missing: {}".format(len(prefab_instances)),
+        len(prefab_instances) >= 6,
+        "expected six authored UNIBLOCKS hero LevelInstances: {}".format(
+            len(prefab_instances)
+        ),
     )
 
     world_assets = set()
@@ -75,7 +77,7 @@ def main():
             pass
 
     require(
-        len(world_assets) >= 4,
+        len(world_assets) >= 3,
         "prefab variety too low: {}".format(sorted(world_assets)),
     )
 
@@ -89,8 +91,22 @@ def main():
         "wrong GameMode: {}".format(game_mode),
     )
 
-    unreal.log("VALIDATE_M9: PREFAB_INSTANCES={}".format(len(prefab_instances)))
+    background_buildings = [
+        label
+        for label in labels
+        if label.startswith(PREFIX + "Building_") and label.endswith("_Background")
+    ]
+
+    require(
+        len(background_buildings) >= 8,
+        "expected eight lightweight background building masses: {}".format(
+            len(background_buildings)
+        ),
+    )
+
+    unreal.log("VALIDATE_M9: HERO_PREFABS={}".format(len(prefab_instances)))
     unreal.log("VALIDATE_M9: PREFAB_VARIANTS={}".format(len(world_assets)))
+    unreal.log("VALIDATE_M9: BACKGROUND_MASSES={}".format(len(background_buildings)))
     unreal.log("VALIDATE_M9: ROAD_MARKS={}".format(len(road_marks)))
     unreal.log("VALIDATE_M9: CROSSWALKS={}".format(len(crosswalks)))
     unreal.log("VALIDATE_M9: ALL CHECKS PASSED")
