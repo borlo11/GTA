@@ -16,7 +16,13 @@ SPORTS_CAR_CLASS = (
 )
 PROXY_CLASS = "/Script/OWGame.OWVehicleInteractionProxy"
 
-VEHICLE_LOCATION = unreal.Vector(280.0, -2450.0, 145.0)
+# Spawn on the south main road, not inside a city lot/prefab.
+# M9's previous PlayerStart/vehicle coordinates sat in a buildable lot after
+# the authored prefab pass, which could place the player inside geometry.
+PLAYER_START_LOCATION = unreal.Vector(-550.0, -4200.0, 140.0)
+PLAYER_START_ROTATION = unreal.Rotator(0.0, 0.0, 0.0)
+
+VEHICLE_LOCATION = unreal.Vector(450.0, -4200.0, 165.0)
 VEHICLE_ROTATION = unreal.Rotator(0.0, 0.0, 0.0)
 
 
@@ -68,6 +74,40 @@ def main():
             removed += 1
 
     unreal.log("M10: removed {} old/generated vehicle actors".format(removed))
+
+    # Re-home the existing M9 PlayerStart onto guaranteed road space.
+    # This is intentionally done in M10 because the new Chaos vehicle also
+    # needs a deterministic, obstruction-free test area nearby.
+    player_starts = [
+        actor
+        for actor in actor_subsystem().get_all_level_actors()
+        if actor and isinstance(actor, unreal.PlayerStart)
+    ]
+
+    if not player_starts:
+        start = actor_subsystem().spawn_actor_from_class(
+            unreal.PlayerStart,
+            PLAYER_START_LOCATION,
+            PLAYER_START_ROTATION,
+        )
+        if not start:
+            raise RuntimeError("M10: failed to create safe PlayerStart")
+        start.set_actor_label("OW_CITY_PlayerStart")
+    else:
+        start = player_starts[0]
+        start.set_actor_location(PLAYER_START_LOCATION, False, False)
+        start.set_actor_rotation(PLAYER_START_ROTATION, False)
+
+        # Remove accidental duplicate PlayerStarts so standalone spawn remains
+        # deterministic.
+        for duplicate in player_starts[1:]:
+            actor_subsystem().destroy_actor(duplicate)
+
+    unreal.log(
+        "M10: PlayerStart moved to safe road location {}".format(
+            PLAYER_START_LOCATION
+        )
+    )
 
     vehicle = actor_subsystem().spawn_actor_from_class(
         sports_car_class,
