@@ -38,16 +38,8 @@ AUTHORED_PREFAB_SITES = (
     ("Residential_Hero_Art", "art", -18000.0, 18000.0, 180.0),
     ("Modern_Hero_Modern", "modern", 18000.0, 30000.0, 180.0),
     ("Modern_Hero_Future", "future", 30000.0, 18000.0, 0.0),
-
-    ("Residential_Infill_01", "classic", -30000.0, 18000.0, 90.0),
-    ("Residential_Infill_02", "art", -18000.0, 30000.0, 270.0),
-    ("Residential_Infill_03", "classic", -6000.0, 30000.0, 180.0),
-    ("Residential_Infill_04", "art", -30000.0, 6000.0, 0.0),
-
-    ("Modern_Infill_01", "modern", 30000.0, 30000.0, 90.0),
-    ("Modern_Infill_02", "future", 18000.0, 18000.0, 270.0),
-    ("Modern_Infill_03", "modern", 6000.0, 30000.0, 0.0),
-    ("Modern_Infill_04", "future", 30000.0, 6000.0, 180.0),
+    ("Residential_Infill_Classic", "classic", -30000.0, 18000.0, 90.0),
+    ("Residential_Infill_Art", "art", -18000.0, 30000.0, 270.0),
 )
 
 # Exact visible (non-collider) assets confirmed by the user's local M11
@@ -280,6 +272,80 @@ def spawn_authored_part_sized(label, mesh_path, location, target_size, yaw=0.0, 
         collision,
         yaw,
     )
+
+
+def find_optional_visible_mesh(required_terms, excluded_terms=()):
+    """Find a local visible StaticMesh without assuming an unsupported asset path."""
+    registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    candidates = []
+
+    for data in registry.get_assets_by_path("/Game/Uniblocks/Meshes", recursive=True):
+        package = str(data.package_name)
+        name = str(data.asset_name)
+        class_path = str(data.asset_class_path)
+        lower = (package + " " + name + " " + class_path).lower()
+
+        if "staticmesh" not in lower:
+            continue
+        if "/colliders/" in lower:
+            continue
+        if any(term.lower() in lower for term in excluded_terms):
+            continue
+        if not all(term.lower() in lower for term in required_terms):
+            continue
+
+        score = 0
+        if "/parts/" not in lower:
+            score += 4
+        if name.lower().startswith("sm_ub"):
+            score += 2
+        if "tree" in name.lower():
+            score += 3
+        candidates.append((score, package, name))
+
+    candidates.sort(key=lambda item: (-item[0], item[1]))
+
+    for _score, package, name in candidates:
+        mesh = unreal.EditorAssetLibrary.load_asset(package)
+        if mesh:
+            log("M11: optional mesh selected {} -> {}".format(name, package))
+            return mesh
+
+    return None
+
+
+def build_street_tree_rows():
+    """Optional greenery pass using a real local tree mesh if the pack exposes one."""
+    tree_mesh = find_optional_visible_mesh(
+        ("tree",),
+        ("leaf", "branch", "trunk", "bark", "stump", "collider"),
+    )
+    if not tree_mesh:
+        warn("M11: no safe complete tree mesh discovered; street trees skipped")
+        return
+
+    positions = []
+    for p in (-33000.0, -27000.0, -21000.0, -15000.0, 15000.0, 21000.0, 27000.0, 33000.0):
+        positions.append((p, 10600.0))
+        positions.append((p, -10600.0))
+        positions.append((10600.0, p))
+        positions.append((-10600.0, p))
+
+    count = 0
+    for x, y in positions:
+        actor = spawn_mesh_sized(
+            PREFIX + "Env_StreetTree_{:03d}".format(count),
+            tree_mesh,
+            unreal.Vector(x, y, 260.0),
+            unreal.Vector(360.0, 360.0, 520.0),
+            None,
+            False,
+            float((count * 41) % 360),
+        )
+        if actor:
+            count += 1
+
+    log("M11: optional street trees={}".format(count))
 
 
 def load_materials():
@@ -674,19 +740,6 @@ def dress_background_mass(mats, district, x, y, ox, oy, sx, sy, sz, yaw, index):
             0.0,
         )
 
-    add_authored_facade_detail(
-        district,
-        x,
-        y,
-        ox,
-        oy,
-        sx,
-        sy,
-        sz,
-        yaw,
-        index,
-    )
-
 
 def build_background_districts(mats):
     """
@@ -719,26 +772,40 @@ def build_background_districts(mats):
 
             district = district_for(x, y)
 
-            # South-east stays intentionally open as park / civic / parking.
-            if district == "ParkEdge":
+            # Keep only the actual civic/parking core open. Phase E left the
+            # whole south-east quadrant empty, which read as an unfinished map.
+            if (
+                district == "ParkEdge"
+                and x >= 18000.0
+                and y <= -18000.0
+            ):
                 continue
 
             if district == "Residential":
                 local = (
-                    (-2200.0, -1650.0, 1900.0, 1500.0, 580.0, 0.0),
-                    (1650.0, -850.0, 1650.0, 1400.0, 720.0, 90.0),
-                    (250.0, 2050.0, 2050.0, 1400.0, 640.0, 0.0),
+                    (-2350.0, -1750.0, 2050.0, 1600.0, 760.0, 0.0),
+                    (1750.0, -900.0, 1750.0, 1450.0, 920.0, 90.0),
+                    (250.0, 2050.0, 2200.0, 1500.0, 820.0, 0.0),
+                    (2450.0, 2100.0, 1250.0, 1250.0, 640.0, 90.0),
                 )
             elif district == "Modern":
                 local = (
-                    (-1850.0, -1100.0, 1650.0, 1550.0, 1150.0, 0.0),
-                    (1750.0, 1150.0, 1550.0, 1650.0, 1380.0, 90.0),
-                    (-250.0, 2250.0, 2700.0, 950.0, 460.0, 0.0),
+                    (-2150.0, -1250.0, 1850.0, 1650.0, 1750.0, 0.0),
+                    (1750.0, 1200.0, 1700.0, 1800.0, 2250.0, 90.0),
+                    (-250.0, 2350.0, 2900.0, 1100.0, 780.0, 0.0),
+                    (2450.0, -2300.0, 1200.0, 1300.0, 1450.0, 90.0),
+                )
+            elif district == "ParkEdge":
+                local = (
+                    (-2200.0, -1750.0, 1800.0, 1550.0, 1150.0, 0.0),
+                    (1650.0, 1250.0, 1650.0, 1650.0, 1450.0, 90.0),
+                    (400.0, 2300.0, 2500.0, 1000.0, 720.0, 0.0),
                 )
             else:
                 local = (
-                    (-1850.0, -1500.0, 3300.0, 1950.0, 620.0, 0.0),
-                    (1950.0, 1450.0, 3000.0, 1850.0, 700.0, 90.0),
+                    (-1950.0, -1550.0, 3450.0, 2050.0, 820.0, 0.0),
+                    (2050.0, 1450.0, 3200.0, 1950.0, 960.0, 90.0),
+                    (100.0, 2350.0, 2200.0, 1150.0, 650.0, 0.0),
                 )
 
             for part_index, (ox, oy, sx, sy, sz, yaw) in enumerate(local):
@@ -1235,43 +1302,36 @@ def build_green_clusters(mats):
 
 
 def build_skyline_landmarks(mats):
-    """Edge landmarks with stepped silhouettes and real facade inserts."""
+    """Distributed mid-rise skyline; avoids three isolated prototype towers."""
     backgrounds = mats["background"] or [mats["sidewalk"]]
     dark = mats["dark"] or mats["sidewalk"]
 
     sites = (
-        ("EastGate", 42500.0, 30000.0, 2200.0, 1500.0, 5600.0, 180.0, -120.0),
-        ("NorthGate", 30000.0, 42500.0, 1500.0, 2350.0, 7000.0, -160.0, 220.0),
-        ("Corner", 42000.0, 42000.0, 1950.0, 1750.0, 8200.0, 210.0, -190.0),
+        ("NE_A", 40500.0, 31500.0, 2600.0, 2100.0, 3300.0, 240.0, -160.0),
+        ("NE_B", 33000.0, 42000.0, 2200.0, 2500.0, 4100.0, -180.0, 210.0),
+        ("NE_C", 43000.0, 42000.0, 3000.0, 2300.0, 2800.0, 190.0, 150.0),
+        ("NW_A", -41000.0, 31500.0, 2800.0, 2200.0, 3000.0, -220.0, -120.0),
+        ("NW_B", -31500.0, 42000.0, 2300.0, 2600.0, 3700.0, 160.0, 190.0),
+        ("SE_A", 42000.0, -33000.0, 3000.0, 2400.0, 2600.0, 180.0, -150.0),
+        ("SW_A", -42000.0, -33000.0, 2900.0, 2300.0, 2900.0, -170.0, 140.0),
     )
 
     parts = 0
-    authored_windows = 0
 
-    for index, (name, x, y, sx, sy, tower_h, upper_dx, upper_dy) in enumerate(sites):
-        pad_size = 6200.0 if name != "Corner" else 5400.0
-        cube(
-            PREFIX + "Skyline_{}_Pad".format(name),
-            unreal.Vector(x, y, -4.0),
-            unreal.Vector(pad_size, pad_size, 12.0),
-            mats["sidewalk"],
-            True,
-            False,
-        )
+    for index, (name, x, y, sx, sy, total_h, dx, dy) in enumerate(sites):
+        podium_h = 520.0 + (index % 3) * 90.0
+        lower_h = total_h * 0.62
+        upper_h = total_h - lower_h
 
-        podium_h = 620.0 + index * 70.0
         cube(
             PREFIX + "Skyline_{}_Podium".format(name),
             unreal.Vector(x, y, podium_h * 0.5),
-            unreal.Vector(sx * 1.62, sy * 1.58, podium_h),
+            unreal.Vector(sx * 1.45, sy * 1.42, podium_h),
             backgrounds[index % len(backgrounds)],
             True,
             False,
         )
         parts += 1
-
-        lower_h = tower_h * 0.61
-        upper_h = tower_h - lower_h
 
         cube(
             PREFIX + "Skyline_{}_Lower".format(name),
@@ -1283,14 +1343,18 @@ def build_skyline_landmarks(mats):
         )
         parts += 1
 
-        upper_x = x + upper_dx
-        upper_y = y + upper_dy
-        upper_sx = sx * (0.68 + index * 0.035)
-        upper_sy = sy * (0.72 - index * 0.025)
+        upper_x = x + dx
+        upper_y = y + dy
+        upper_sx = sx * (0.64 + (index % 2) * 0.08)
+        upper_sy = sy * (0.68 - (index % 3) * 0.04)
 
         cube(
             PREFIX + "Skyline_{}_Upper".format(name),
-            unreal.Vector(upper_x, upper_y, podium_h + lower_h + upper_h * 0.5),
+            unreal.Vector(
+                upper_x,
+                upper_y,
+                podium_h + lower_h + upper_h * 0.5,
+            ),
             unreal.Vector(upper_sx, upper_sy, upper_h),
             backgrounds[(index + 2) % len(backgrounds)],
             True,
@@ -1298,71 +1362,34 @@ def build_skyline_landmarks(mats):
         )
         parts += 1
 
-        crown_h = 360.0 + index * 80.0
+        # Horizontal facade bands are cheap but stop the silhouettes reading as raw boxes.
+        for band in range(1, 4):
+            band_z = podium_h + lower_h * (band / 4.0)
+            cube(
+                PREFIX + "Skyline_{}_Band_{:02d}".format(name, band),
+                unreal.Vector(x, y + sy * 0.5 + 9.0, band_z),
+                unreal.Vector(sx * 0.76, 18.0, 52.0),
+                dark,
+                False,
+                False,
+            )
+            parts += 1
+
         cube(
-            PREFIX + "Skyline_{}_Crown".format(name),
+            PREFIX + "Skyline_{}_Roof".format(name),
             unreal.Vector(
                 upper_x,
                 upper_y,
-                podium_h + tower_h + crown_h * 0.5,
+                podium_h + total_h + 95.0,
             ),
-            unreal.Vector(upper_sx * 0.58, upper_sy * 0.58, crown_h),
+            unreal.Vector(upper_sx * 0.46, upper_sy * 0.42, 190.0),
             dark,
             False,
             False,
         )
         parts += 1
 
-        window_mesh = (
-            AUTHORED_PARTS["window_big"]
-            if index != 1
-            else AUTHORED_PARTS["window_mid"]
-        )
-        for row in range(3):
-            z = podium_h + lower_h * (0.22 + row * 0.25)
-            part = spawn_authored_part_sized(
-                PREFIX + "AuthoredSkyline_Window_{}_{:02d}".format(name, row),
-                window_mesh,
-                unreal.Vector(x, y + sy * 0.5 + 24.0, z),
-                unreal.Vector(max(700.0, sx * 0.62), 48.0, 360.0),
-                0.0,
-                False,
-            )
-            if part:
-                authored_windows += 1
-
-        cube(
-            PREFIX + "Skyline_{}_RoofServiceA".format(name),
-            unreal.Vector(
-                upper_x + upper_sx * 0.18,
-                upper_y - upper_sy * 0.14,
-                podium_h + tower_h + crown_h + 105.0,
-            ),
-            unreal.Vector(360.0, 300.0, 210.0),
-            dark,
-            False,
-            False,
-        )
-        cube(
-            PREFIX + "Skyline_{}_RoofServiceB".format(name),
-            unreal.Vector(
-                upper_x - upper_sx * 0.19,
-                upper_y + upper_sy * 0.16,
-                podium_h + tower_h + crown_h + 72.0,
-            ),
-            unreal.Vector(250.0, 280.0, 145.0),
-            dark,
-            False,
-            False,
-        )
-        parts += 2
-
-    log(
-        "M11: skyline landmark parts={} authored_windows={}".format(
-            parts,
-            authored_windows,
-        )
-    )
+    log("M11: distributed skyline parts={} sites={}".format(parts, len(sites)))
 
 
 def add_outer_street_lights(mats):
@@ -1521,6 +1548,7 @@ def main():
     build_road_detail_pass(mats)
     build_street_furniture(mats)
     build_green_clusters(mats)
+    build_street_tree_rows()
     build_skyline_landmarks(mats)
 
     add_outer_street_lights(mats)
@@ -1529,7 +1557,7 @@ def main():
     verify_m10_preserved()
     save_map()
 
-    log("M11: PHASE E AUTHORED-ASSET CITY PASS COMPLETE")
+    log("M11: PHASE F DENSITY AND SKYLINE CORRECTION COMPLETE")
     log("M11: ALL CHECKS PASSED")
 
 

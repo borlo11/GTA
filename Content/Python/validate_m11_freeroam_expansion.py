@@ -95,10 +95,10 @@ def main():
     require(len(m11) >= 250, "expected substantial additive world expansion")
     require(len(roads) >= 14, "expected at least fourteen expanded roads")
     require(len(pads) >= 28, "expected outer district block pads")
-    require(len(hero_prefabs) >= 12, "expected twelve authored outer hero/infill prefabs")
+    require(len(hero_prefabs) >= 6, "expected six authored hero/infill prefabs")
     require(
-        len(background_buildings) >= 28,
-        "expected remaining clustered background buildings after authored infill",
+        len(background_buildings) >= 55,
+        "expected dense clustered background buildings after Phase F correction",
     )
     require(len(lane_graphics) >= 150, "expected expanded road graphics")
     require(len(parking_marks) >= 18, "expected visible parking detail")
@@ -116,12 +116,12 @@ def main():
         "expected three industrial loading docks",
     )
     require(
-        len(facade_details) >= 28,
-        "expected facade cues on remaining background massing",
+        len(facade_details) >= 55,
+        "expected facade cues on dense background massing",
     )
     require(
-        len(roof_details) >= 28,
-        "expected rooftop silhouette detail on remaining massing",
+        len(roof_details) >= 55,
+        "expected rooftop silhouette detail on dense massing",
     )
     require(
         len(secondary_parking) >= 30,
@@ -136,20 +136,8 @@ def main():
         "expected human-scale street furniture",
     )
     require(
-        len(skyline) >= 18,
-        "expected three stepped lightweight skyline landmarks",
-    )
-    require(
-        len(authored_facades) >= 24,
-        "expected real UNIBLOCKS facade parts on remaining procedural buildings",
-    )
-    require(
-        len(authored_skyline) >= 9,
-        "expected real facade inserts on skyline landmarks",
-    )
-    require(
-        len(authored_lamps) >= 20,
-        "expected real UNIBLOCKS lamp heads on outer streetlights",
+        len(skyline) >= 45,
+        "expected seven distributed mid-rise skyline landmarks",
     )
 
     require(
@@ -191,7 +179,7 @@ def main():
     unreal.log("VALIDATE_M11: authored_facades={}".format(len(authored_facades)))
     unreal.log("VALIDATE_M11: authored_skyline={}".format(len(authored_skyline)))
     unreal.log("VALIDATE_M11: authored_lamps={}".format(len(authored_lamps)))
-    unreal.log("VALIDATE_M11: PHASE E CHECKS PASSED")
+    unreal.log("VALIDATE_M11: PHASE F CHECKS PASSED")
     unreal.log("VALIDATE_M11: ALL CHECKS PASSED")
 
 

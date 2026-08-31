@@ -236,3 +236,19 @@ Changes:
 All exact visible-part paths came from the user's local inventory. Missing optional parts degrade gracefully; core roads, M9/M10 gameplay and the 60 FPS / 16.67 ms target remain unchanged.
 
 Cloud-side Unreal validation is **NOT EXECUTED**. Local acceptance requires rerunning the bootstrap and validator in UE 5.8, followed by representative on-foot and SportsCar free-roam screenshots/performance checks.
+
+
+## Phase F — density and skyline correction
+
+The first Phase E driving screenshot exposed a visual regression despite structural validation passing. Too many procedural lots had been removed for small authored prefabs, the south-east quadrant read as unfinished, facade inserts could appear as isolated panels, and the three edge towers still looked like prototype slabs.
+
+Phase F corrects the visual strategy:
+
+- authored LevelInstances are reduced to six deliberate hero/infill buildings instead of using them as a substitute for city mass;
+- procedural district massing is restored and made denser/taller, with four-volume residential/modern clusters and fuller industrial lots;
+- only the actual civic/parking core remains open in the south-east; surrounding ParkEdge lots now receive urban massing;
+- risky standalone authored facade/window inserts are no longer spawned on procedural buildings;
+- the three isolated high towers are removed and replaced by seven broader, lower, distributed mid-rise skyline landmarks with stepped upper masses and facade bands;
+- an optional runtime discovery pass adds real local UNIBLOCKS street trees when a safe complete tree mesh is available, without making the bootstrap dependent on a fabricated asset path.
+
+This phase prioritizes a coherent city silhouette and density over forcing individual modular pieces into contexts where their pivots/bounds are unknown.
