@@ -199,6 +199,39 @@ def spawn_mesh_sized(label, mesh, location, target_size, material=None, collisio
     return actor
 
 
+def spawn_optional_visible_mesh(label, mesh_name, location, scale, yaw=0.0):
+    """
+    Spawn a confirmed visible UNIBLOCKS mesh by asset name.
+
+    This helper is intentionally optional: dressing assets should never make
+    the whole environment bootstrap fail if a specific Fab mesh is absent.
+    """
+    mesh = find_asset("/Game/Uniblocks/Meshes", mesh_name)
+    if not mesh:
+        warn("M11: optional visible mesh missing: {}".format(mesh_name))
+        return None
+
+    actor = actor_subsystem().spawn_actor_from_class(
+        unreal.StaticMeshActor,
+        location,
+        unreal.Rotator(0.0, yaw, 0.0),
+    )
+    if not actor:
+        warn("M11: failed spawning optional visible mesh: {}".format(label))
+        return None
+
+    set_label(actor, label)
+    set_tags(actor, "OWNoPopulationSpawn")
+
+    component = actor.static_mesh_component
+    component.set_mobility(unreal.ComponentMobility.STATIC)
+    component.set_static_mesh(mesh)
+    component.set_collision_enabled(unreal.CollisionEnabled.QUERY_AND_PHYSICS)
+
+    actor.set_actor_scale3d(scale)
+    return actor
+
+
 def load_materials():
     root = "/Game/Uniblocks/Materials"
     backgrounds = [
