@@ -54,6 +54,7 @@ private:
     void TogglePerformanceOverlay();
 
     UChaosWheeledVehicleMovementComponent* GetActiveChaosMovement() const;
+    void WakeActiveChaosVehicle();
     void UpdateSteeringInput();
 
     void VehicleForwardPressed();
@@ -66,6 +67,7 @@ private:
     void VehicleSteerRightReleased();
     void VehicleHandbrakePressed();
     void VehicleHandbrakeReleased();
+    void VehicleResetPressed();
     void VehicleExitPressed();
     void VehicleLookYaw(float Value);
     void VehicleLookPitch(float Value);
