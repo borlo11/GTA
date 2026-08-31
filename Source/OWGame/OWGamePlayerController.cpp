@@ -253,41 +253,41 @@ void AOWGamePlayerController::ExitChaosVehicle()
         Movement->SetHandbrakeInput(false);
     }
 
-    AOWGameCharacter* Character = VehicleDriverCharacter;
+    AOWGameCharacter* DriverCharacter = VehicleDriverCharacter;
     APawn* VehiclePawn = ActiveVehiclePawn;
 
     const FVector ExitLocation =
         VehiclePawn->GetActorTransform().TransformPosition(VehicleExitOffset);
 
-    Character->SetActorLocationAndRotation(
+    DriverCharacter->SetActorLocationAndRotation(
         ExitLocation,
         FRotator(0.0f, VehiclePawn->GetActorRotation().Yaw, 0.0f),
         false,
         nullptr,
         ETeleportType::TeleportPhysics);
-    Character->SetActorHiddenInGame(false);
-    Character->SetActorEnableCollision(true);
+    DriverCharacter->SetActorHiddenInGame(false);
+    DriverCharacter->SetActorEnableCollision(true);
 
     if (UCharacterMovementComponent* CharacterMovement =
-        Character->GetCharacterMovement())
+        DriverCharacter->GetCharacterMovement())
     {
         CharacterMovement->SetMovementMode(MOVE_Walking);
     }
 
-    Possess(Character);
+    Possess(DriverCharacter);
 
-    if (GetPawn() != Character)
+    if (GetPawn() != DriverCharacter)
     {
         UE_LOG(
             LogOWGame,
             Error,
             TEXT("Chaos vehicle exit failed: controller possesses %s instead of %s."),
             *GetNameSafe(GetPawn()),
-            *GetNameSafe(Character));
+            *GetNameSafe(DriverCharacter));
         return;
     }
 
-    Character->ActivateOnFootInput();
+    DriverCharacter->ActivateOnFootInput();
 
     SetControlRotation(
         FRotator(0.0f, VehiclePawn->GetActorRotation().Yaw, 0.0f));
@@ -301,7 +301,7 @@ void AOWGamePlayerController::ExitChaosVehicle()
         LogOWGame,
         Log,
         TEXT("%s exited Chaos vehicle %s."),
-        *Character->GetName(),
+        *DriverCharacter->GetName(),
         *VehiclePawn->GetName());
 }
 
