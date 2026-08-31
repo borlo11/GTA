@@ -1,5 +1,5 @@
 # validate_m11_freeroam_expansion.py
-# Structural validator for M11 Phase B free-roam expansion.
+# Structural validator for M11 Phase C free-roam environment pass.
 
 import unreal
 
@@ -50,15 +50,39 @@ def main():
     streetlights = [
         a for a in m11 if "StreetLight_" in a.get_actor_label()
     ]
+    phase_c_bushes = [
+        a for a in m11 if "Env_Bush_" in a.get_actor_label()
+    ]
+    phase_c_boulevards = [
+        a for a in m11 if "Env_Boulevard_" in a.get_actor_label()
+    ]
+    loading_docks = [
+        a for a in m11 if "Industrial_LoadingDock_" in a.get_actor_label()
+    ]
 
     require(len(m11) >= 250, "expected substantial additive world expansion")
     require(len(roads) >= 14, "expected at least fourteen expanded roads")
     require(len(pads) >= 28, "expected outer district block pads")
     require(len(hero_prefabs) >= 4, "expected four authored outer hero prefabs")
-    require(len(background_buildings) >= 15, "expected lightweight district buildings")
+    require(
+        len(background_buildings) >= 50,
+        "expected Phase C clustered district buildings",
+    )
     require(len(lane_graphics) >= 150, "expected expanded road graphics")
     require(len(parking_marks) >= 18, "expected visible parking detail")
     require(len(streetlights) >= 40, "expected sparse outer street-light dressing")
+    require(
+        len(phase_c_bushes) >= 30,
+        "expected Phase C residential/modern landscaping",
+    )
+    require(
+        len(phase_c_boulevards) == 4,
+        "expected four Phase C boulevard edge bands",
+    )
+    require(
+        len(loading_docks) == 3,
+        "expected three industrial loading docks",
+    )
 
     require(
         "OW_M10_SportsCar" in labels,
@@ -87,6 +111,10 @@ def main():
     unreal.log("VALIDATE_M11: road_graphics={}".format(len(lane_graphics)))
     unreal.log("VALIDATE_M11: parking_marks={}".format(len(parking_marks)))
     unreal.log("VALIDATE_M11: streetlight_parts={}".format(len(streetlights)))
+    unreal.log("VALIDATE_M11: phase_c_bushes={}".format(len(phase_c_bushes)))
+    unreal.log("VALIDATE_M11: phase_c_boulevards={}".format(len(phase_c_boulevards)))
+    unreal.log("VALIDATE_M11: industrial_loading_docks={}".format(len(loading_docks)))
+    unreal.log("VALIDATE_M11: PHASE C CHECKS PASSED")
     unreal.log("VALIDATE_M11: ALL CHECKS PASSED")
 
 
