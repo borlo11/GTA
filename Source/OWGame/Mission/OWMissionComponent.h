@@ -7,7 +7,7 @@
 #include "OWMissionComponent.generated.h"
 
 class AOWMissionMarker;
-class AOWPrototypeVehicle;
+class APawn;
 
 UCLASS(ClassGroup=(OWGame), meta=(BlueprintSpawnableComponent))
 class OWGAME_API UOWMissionComponent : public UActorComponent
@@ -70,7 +70,7 @@ protected:
     void SaveMissionProgress() const;
     void LoadMissionProgress();
 
-    AOWPrototypeVehicle* FindPrototypeVehicle() const;
+    APawn* FindMissionVehicle() const;
     FVector ResolveCurrentObjectiveLocation(bool& bHasLocation) const;
 
     void EnsureMarker();
