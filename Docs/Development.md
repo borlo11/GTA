@@ -78,6 +78,30 @@ M7 is code-only and requires no new binary assets. The persistent mission compon
 
 M8 integrates the previous systems into the first player-facing slice in `OW_LightweightCity`. A green in-world HOT RUN marker starts the mission with normal E interaction; F9 toggles a lightweight FPS/frame-time overlay. Run `Content/Python/validate_m8_vertical_slice.py` for the non-destructive city/World Partition inspection. See `Docs/Milestone8.md`.
 
+## Milestone 9 visual / city overhaul
+
+M9 rebuilds `OW_LightweightCity` using the existing local UNIBLOCKS FREE dependency plus lightweight engine geometry. After pulling the branch and opening/building the project, run:
+
+```text
+py "C:\Users\MyPC\Documents\OWGame\Content\Python\bootstrap_m9_city_overhaul.py"
+```
+
+Required marker:
+
+`M9: ALL CHECKS PASSED`
+
+Then validate with:
+
+```text
+py "C:\Users\MyPC\Documents\OWGame\Content\Python\validate_m9_city_overhaul.py"
+```
+
+Required marker:
+
+`VALIDATE_M9: ALL CHECKS PASSED`
+
+The project startup map is now `OW_LightweightCity`. See `Docs/Milestone9.md`.
+
 ## Input assets
 
 On-foot baseline:

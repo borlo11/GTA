@@ -42,4 +42,12 @@ Persistent mission state, reusable objective types, runtime markers, SaveGame in
 
 A compact original district combining M1-M7, an in-world Hot Run entry point, polished mission feedback, a 60 FPS debug budget overlay, and a non-destructive World Partition/streaming inspection.
 
-Expansion beyond M8 is intentionally undefined until the vertical slice is evaluated.
+## M9 — Visual & city overhaul
+
+Denser urban grid, road markings, crosswalks, parking detail, varied building silhouettes, street furniture, dynamic lighting baseline, and continued 60 FPS validation.
+
+## M10 — Realistic vehicle foundation
+
+Replace the floating-box vehicle prototype with a Chaos Vehicles-based drivable car foundation, realistic wheel/suspension behavior, speed-sensitive steering, braking/handbrake, improved vehicle camera, and a reusable multi-vehicle architecture.
+
+Post-M10 milestones will be defined from visual, vehicle, combat, AI/police, audio/UI, and production-quality priorities after each vertical-slice review.

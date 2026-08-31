@@ -83,15 +83,29 @@ bool AOWPoliceDirector::FindGroundedSpawnLocation(
         return false;
     }
 
-#if WITH_EDITOR
     if (const AActor* GroundActor = GroundHit.GetActor())
     {
+        const bool bIsLightweightCity =
+            World->GetMapName().Contains(TEXT("OW_LightweightCity"));
+
+        if (GroundActor->ActorHasTag(TEXT("OWNoPopulationSpawn")))
+        {
+            return false;
+        }
+
+        if (bIsLightweightCity &&
+            !GroundActor->ActorHasTag(TEXT("OWWalkableSpawn")))
+        {
+            return false;
+        }
+
+#if WITH_EDITOR
         if (GroundActor->GetActorLabel().Contains(TEXT("Building")))
         {
             return false;
         }
-    }
 #endif
+    }
 
     OutLocation = GroundHit.ImpactPoint + FVector(0.0f, 0.0f, 96.0f);
     return true;

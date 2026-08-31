@@ -6,7 +6,7 @@ OWGame is the internal technical codename for an original Unreal Engine 5.8 open
 
 ## Current runtime module
 
-`OWGame` remains a single runtime module through Milestone 8. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
+`OWGame` remains a single runtime module through Milestone 9. Splitting into additional modules is intentionally deferred until boundaries are justified by real code.
 
 ## Game framework
 
@@ -114,6 +114,16 @@ The mission start actor implements the existing interaction interface and launch
 The M7 mission marker gains lightweight presentation polish, while the HUD adds an immediate mission-complete banner and an optional F9 performance overlay. These changes do not move mission state out of `UOWMissionComponent` or create parallel wanted/health systems.
 
 M8 also adds a non-destructive map/World Partition inspection script. The compact city is not automatically converted to World Partition because the current district does not yet demonstrate a streaming requirement.
+
+## M9 city / rendering layer
+
+Milestone 9 is primarily an editor-generation and rendering milestone rather than a new runtime gameplay system.
+
+`Content/Python/bootstrap_m9_city_overhaul.py` rebuilds the generated `OW_LightweightCity` actors under the existing `OW_CITY_` ownership prefix. It preserves player, vehicle, mission, wanted, and population ownership boundaries while increasing urban density and visual readability.
+
+The desktop rendering baseline moves to dynamic GI/reflections and virtual shadows through project renderer settings. The city WorldSettings are configured for no precomputed lighting when the engine exposes that flag, avoiding a baked-lighting dependency while the district is still iterating quickly.
+
+The city remains compact. This milestone deliberately does not justify a World Partition conversion yet; M8/M9 validators continue to expose the decision point without forcing streaming infrastructure.
 
 ## Deferred large-world technology
 
